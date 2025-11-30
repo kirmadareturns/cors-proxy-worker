@@ -684,8 +684,7 @@
                 
                 <!-- Target KB Prompt -->
                 <div class="target_kb_prompt" id="targetKbPrompt">
-                    <h3>📏 Set Target File Size</h3>
-                    <p>Your images are ready to compress. Enter your desired target file size:</p>
+                    <h3>What size do you want? (KB)</h3>
                     <div class="original_size">
                         <span id="totalOriginalSize"></span>
                     </div>
@@ -699,15 +698,15 @@
                             min="10" 
                             max="102400" 
                             step="10"
-                            placeholder="150"
+                            placeholder="e.g., 150"
                         >
                         <div class="target_kb_error" id="targetKbError">Please enter a valid size (10 KB - 100 MB)</div>
                         <div class="target_kb_warning" id="targetKbWarning">⚠️ Target size is very small - quality may be significantly affected</div>
                     </div>
                     
                     <div class="target_kb_buttons">
-                        <button type="button" class="btn_compress" onclick="startCompressionWithTarget()">🚀 Start Compression</button>
-                        <button type="button" class="btn_change_files" onclick="clearAndRestart()">🔄 Change Files</button>
+                        <button type="button" class="btn_compress" onclick="startCompressionWithTarget()">Compress</button>
+                        <button type="button" class="btn_change_files" onclick="clearAndRestart()">Cancel</button>
                     </div>
                 </div>
                 

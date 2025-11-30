@@ -77,8 +77,8 @@ document.addEventListener("DOMContentLoaded", function() {
       setTimeout(() => {
          document.getElementById('compress_progress').classList.add('compression_complete');
          document.querySelector('.compression_status').classList.add('compression_status--complete');
-         const totalReducedVerb = compressionStatus.afterSize ? ' Reduced '+readableFileSize(compressionStatus.saved, true)+' <span>('+compressionStatus.percent+'%)</span>' : '';
-         document.querySelector('.compression_status').innerHTML = `✔ Compressed ${Object.keys(compressedFiles).length}/${uploadedFiles.length} Images. ${totalReducedVerb}`;
+         const totalReducedVerb = compressionStatus.afterSize ? ' Saved '+readableFileSize(compressionStatus.saved, true)+' <span>('+compressionStatus.percent+'%)</span>' : '';
+         document.querySelector('.compression_status').innerHTML = `✓ All images compressed to target size. ${totalReducedVerb}`;
       }, 1000);
    }, false);
 
@@ -180,7 +180,7 @@ async function processFiles(files){
    }
 
    // Show target KB prompt and update status
-   document.querySelector('.compression_status').innerHTML = `✔ ${uploadedFiles.length} files ready. Set target size to begin compression.`;
+   document.querySelector('.compression_status').innerHTML = `Ready to compress ${uploadedFiles.length} image${uploadedFiles.length > 1 ? 's' : ''}`;
    showTargetKbPrompt();
 }
 
@@ -518,7 +518,7 @@ function showTargetKbPrompt(){
    const totalSize = uploadedFiles.reduce((sum, file) => sum + file.size, 0);
    const totalSizeKB = Math.round(totalSize / 1024);
    
-   document.getElementById('totalOriginalSize').textContent = `Total original size: ${readableFileSize(totalSize, true)} (${uploadedFiles.length} files)`;
+   document.getElementById('totalOriginalSize').textContent = `Original: ${readableFileSize(totalSize, true)}`;
    document.getElementById('targetKbPrompt').classList.add('show');
    
    // Set default target to 150KB or 50% of original, whichever is smaller
