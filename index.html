@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Woofy Image Compressor</title>
+    <style>
+        /* Minimal CSS for visibility - you should create a separate file */
+        body { font-family: sans-serif; margin: 0; background-color: #f4f7f9; }
+        .main { min-height: 100vh; padding: 20px; }
+        .uploadDropWrap { border: 2px dashed #ccc; padding: 50px; text-align: center; cursor: pointer; }
+        .highlight { border-color: #007bff; background-color: #e6f7ff; }
+        #theFiles { display: none; margin-top: 20px; }
+        .fileList_footer { margin-top: 15px; padding: 10px; border-top: 1px solid #eee; }
+        #progressbar { height: 20px; background-color: #ddd; margin-bottom: 10px; }
+        #progressbar span { display: block; height: 100%; background-color: #4bd37b; width: 0; transition: width 0.3s; }
+        .compression_status { margin-bottom: 10px; font-weight: bold; }
+        #fileList ul { list-style: none; padding: 0; }
+        #fileList li { display: flex; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
+        .fileContent { flex-grow: 1; margin-left: 10px; }
+        .compare { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 100; justify-content: center; align-items: center; }
+        .compare--show { display: flex; }
+        /* Add more CSS for Woofy, rocket, settings, and file display */
+    </style>
+</head>
+<body id="theApp">
+
+    <div class="main">
+        <h1>🚀 Woofy Image Compressor</h1>
+
+        <div class="uploadDropWrap">
+            <input type="file" class="form_file_upload_field" accept="image/jpeg, image/png" multiple style="display: none;">
+            <div id="uploadDrop" class="dropArea">
+                <p class="dropboxTitle">Drag & Drop .png or .jpg files here!</p>
+                <button id="uploadDropButton">or Click to Select Files</button>
+            </div>
+        </div>
+
+        <div class="woofy">
+            <div class="woofy__eyes">👀</div>
+            <div class="woofy__eyes_closed" style="display:none;">--</div>
+            <div class="woofy__ears_left">👂</div>
+            <div class="woofy__ears_right">👂</div>
+            <div class="woofy__suit">🧑‍🚀</div>
+            <div class="woofy__suit_helmet"> helmet </div>
+            <div class="woofy_speech_bubble">
+                <span class="woofy_speech_bubble__text">Hi there!</span>
+            </div>
+        </div>
+        
+        <div class="content_animation_rocket" style="position: fixed; bottom: -70px; right: 50px; transition: all 0.6s ease-in; opacity: 1;">
+            <div class="bloom">💥</div>
+        </div>
+        <div id="theFiles">
+            <div id="fileControls">
+                <button onclick="showSettings()">⚙️ Settings</button>
+                <button id="recompress" onclick="recompress()" style="display:none;">🔄 Recompress</button>
+                <div id="settings" class="settings_panel">
+                    <h3>Compression Settings</h3>
+                    <div class="setting_group">
+                        <label>Quality (JPG/WEBP):</label>
+                        <input type="range" id="setting_image_quality" min="1" max="100" value="70" 
+                               oninput="updateQuality(this.value, false)" onchange="updateQuality(this.value, true)">
+                        <span class="setting_image_quality__val">70%</span>
+                    </div>
+                    <div class="setting_group">
+                        <label>Max Width/Height (px):</label>
+                        <input type="number" id="setting_image_widthHeight" placeholder="e.g., 1920" 
+                               oninput="updateMaxSize(this.value, false)" onchange="updateMaxSize(this.value, true)">
+                    </div>
+                    <div class="setting_group">
+                        <label>Convert to WebP:</label>
+                        <input type="checkbox" id="setting_image_webp" onchange="updateWebpSetting()">
+                    </div>
+                    <div class="setting_group">
+                        <label>Filename Prefix (e.g., '-min'):</label>
+                        <input type="text" id="setting_image_prefix" placeholder="e.g., -min" 
+                               oninput="updateImagePrefix(this.value, false)" onchange="updateImagePrefix(this.value, true)">
+                    </div>
+                </div>
+            </div>
+
+            <div id="fileList">
+                <ul>
+                    </ul>
+            </div>
+
+            <div class="fileList_footer">
+                <div class="compression_status">Waiting for files...</div>
+                <div id="compress_progress" data-compressed="0">
+                    <span id="progressbar"><span></span></span>
+                    <i style="font-style: normal;">0</i>%
+                </div>
+                <div class="fileList_footer__beforeAfter"></div>
+                <div class="fileList_footer__totalSaving"></div>
+                <div class="fileList_footer__processing" style="display: none;"></div>
+
+                <div class="file_controls">
+                    <button id="clear_added_files">🗑️ Clear Files</button>
+                    <button id="uploadControlButton">➕ Add More Files</button>
+                    <button class="file_download" onclick="zipFiles()" data-compressed="0">
+                        <i>Download Zip</i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div id="compare" class="compare">
+            <span class="compare_close" onclick="closeCompare()">❌</span>
+            <div class="compare__inner">
+                <div class="before_image" data-size="Before (0 Kb)"></div>
+                <div class="after_image" data-size="After (0 Kb)"></div>
+                <input type="range" min="0" max="100" value="50" class="info_compare_slider" 
+                       id="compare_slider" oninput="moveCompareSlider()">
+            </div>
+            <div class="compare_labels">
+                <span onclick="demoCompare(true)">Original</span>
+                <span onclick="demoCompare(false)">Compressed</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script src="lib/image-compression.js"></script>
+    <script src="lib/compressor.js"></script>
+    <script src="lib/webp-enc.js"></script> <script src="lib/jszip.min.js"></script>
+    <script src="lib/FileSaver.min.js"></script>
+    
+    <script src="my-app.js"></script>
+</body>
+</html>
