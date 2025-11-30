@@ -2,130 +2,1198 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Woofy Image Compressor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    
+    <title>Woofy Image Compressor - Free Online PNG & JPG Compression Tool</title>
+    <meta name="description" content="Free online image compressor tool. Compress PNG, JPG, and convert to WebP format. Reduce image file sizes by up to 90% without losing quality. Fast, secure, and works in your browser.">
+    <meta name="keywords" content="image compressor, compress png, compress jpg, reduce image size, webp converter, image optimization, free image compressor">
+    <meta name="author" content="Woofy Image Compressor">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://yoursite.com/">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="https://yoursite.com/">
+    <meta property="og:title" content="Woofy Image Compressor - Free Online Image Compression">
+    <meta property="og:description" content="Compress PNG & JPG images up to 90% without losing quality. Free online tool with WebP conversion support.">
+    <meta property="og:image" content="https://yoursite.com/og-image.jpg">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="https://yoursite.com/">
+    <meta property="twitter:title" content="Woofy Image Compressor - Free Online Image Compression">
+    <meta property="twitter:description" content="Compress PNG & JPG images up to 90% without losing quality. Free online tool with WebP conversion support.">
+    <meta property="twitter:image" content="https://yoursite.com/twitter-image.jpg">
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#4bd37b">
+    
+    <!-- Favicons -->
+    <link rel="icon" type="image/png" sizes="32x32" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='0.9em' font-size='90'>🐕</text></svg>">
+    
+    <!-- Schema.org Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebApplication",
+      "name": "Woofy Image Compressor",
+      "description": "Free online image compression tool that compresses PNG and JPG images and converts them to WebP format without losing quality.",
+      "url": "https://yoursite.com/",
+      "applicationCategory": "UtilityApplication",
+      "operatingSystem": "Any",
+      "offers": {
+        "@type": "Offer",
+        "price": "0",
+        "priceCurrency": "USD"
+      },
+      "featureList": [
+        "Compress PNG images",
+        "Compress JPG/JPEG images",
+        "Convert images to WebP format",
+        "Batch image compression",
+        "Download compressed images as ZIP",
+        "Adjust compression quality",
+        "Resize images",
+        "Before/after comparison",
+        "Client-side processing (secure)",
+        "No file size limits"
+      ],
+      "browserRequirements": "Requires JavaScript. Works best with modern browsers.",
+      "screenshot": "https://yoursite.com/screenshot.jpg"
+    }
+    </script>
+    
     <style>
-        /* Minimal CSS for visibility - you should create a separate file */
-        body { font-family: sans-serif; margin: 0; background-color: #f4f7f9; }
-        .main { min-height: 100vh; padding: 20px; }
-        .uploadDropWrap { border: 2px dashed #ccc; padding: 50px; text-align: center; cursor: pointer; }
-        .highlight { border-color: #007bff; background-color: #e6f7ff; }
-        #theFiles { display: none; margin-top: 20px; }
-        .fileList_footer { margin-top: 15px; padding: 10px; border-top: 1px solid #eee; }
-        #progressbar { height: 20px; background-color: #ddd; margin-bottom: 10px; }
-        #progressbar span { display: block; height: 100%; background-color: #4bd37b; width: 0; transition: width 0.3s; }
-        .compression_status { margin-bottom: 10px; font-weight: bold; }
-        #fileList ul { list-style: none; padding: 0; }
-        #fileList li { display: flex; align-items: center; border-bottom: 1px solid #eee; padding: 10px 0; }
-        .fileContent { flex-grow: 1; margin-left: 10px; }
-        .compare { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.9); z-index: 100; justify-content: center; align-items: center; }
-        .compare--show { display: flex; }
-        /* Add more CSS for Woofy, rocket, settings, and file display */
+        /* Critical CSS - Inline for Performance */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary-color: #4bd37b;
+            --primary-dark: #3ab565;
+            --secondary-color: #007bff;
+            --danger-color: #ff4444;
+            --text-color: #1b2023;
+            --text-light: #666;
+            --bg-color: #f4f7f9;
+            --bg-white: #ffffff;
+            --border-color: #e0e4e8;
+            --shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.15);
+            --radius: 8px;
+            --transition: all 0.3s ease;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-color);
+            background: linear-gradient(135deg, #f4f7f9 0%, #e8eef2 100%);
+            min-height: 100vh;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        .main {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        header {
+            text-align: center;
+            padding: 20px 0 30px;
+        }
+        
+        h1 {
+            font-size: clamp(1.8rem, 4vw, 2.5rem);
+            color: var(--text-color);
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+        
+        .subtitle {
+            font-size: clamp(0.9rem, 2vw, 1.1rem);
+            color: var(--text-light);
+            margin-bottom: 20px;
+        }
+        
+        /* Upload Area */
+        .uploadDropWrap {
+            background: var(--bg-white);
+            border: 3px dashed var(--border-color);
+            border-radius: var(--radius);
+            padding: 60px 20px;
+            text-align: center;
+            cursor: pointer;
+            transition: var(--transition);
+            position: relative;
+            box-shadow: var(--shadow);
+        }
+        
+        .uploadDropWrap:hover {
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+        
+        .uploadDropWrap.highlight {
+            border-color: var(--primary-color);
+            background: linear-gradient(135deg, #e6f9f0 0%, #f0fdf7 100%);
+            transform: scale(1.02);
+        }
+        
+        .uploadDropWrap--popup {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 99;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .uploadDropWrap--popup::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: -1;
+        }
+        
+        .dropboxTitle {
+            font-size: clamp(1.1rem, 2.5vw, 1.4rem);
+            color: var(--text-color);
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .dropboxSubtitle {
+            font-size: 0.95rem;
+            color: var(--text-light);
+            margin-bottom: 25px;
+        }
+        
+        .form_file_upload_field {
+            display: none;
+        }
+        
+        #uploadDropButton {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 1rem;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(75, 211, 123, 0.3);
+        }
+        
+        #uploadDropButton:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(75, 211, 123, 0.4);
+        }
+        
+        /* Woofy Mascot */
+        .woofy {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            font-size: 60px;
+            z-index: 50;
+            pointer-events: none;
+        }
+        
+        .woofy > div {
+            position: absolute;
+            transition: var(--transition);
+        }
+        
+        .woofy__eyes {
+            font-size: 20px;
+            top: 20px;
+            left: 15px;
+        }
+        
+        .woofy__eyes_closed {
+            font-size: 20px;
+            top: 20px;
+            left: 15px;
+            display: none;
+        }
+        
+        .woofy__ears_left {
+            font-size: 20px;
+            top: -5px;
+            left: 5px;
+            animation: earWiggleL 3s ease-in-out infinite;
+        }
+        
+        .woofy__ears_right {
+            font-size: 20px;
+            top: -5px;
+            right: 5px;
+            animation: earWiggleR 3s ease-in-out infinite 0.5s;
+        }
+        
+        .woofy__suit {
+            font-size: 60px;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.4s ease;
+        }
+        
+        .woofy__suit--show {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .woofy__suit_helmet {
+            position: absolute;
+            top: -10px;
+            left: 10px;
+            font-size: 30px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.4s ease;
+        }
+        
+        .woofy__suit_helmet::before {
+            content: '⛑️';
+        }
+        
+        .woofy__suit_helmet--show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .woofy_speech_bubble {
+            position: absolute;
+            background: white;
+            border-radius: 12px;
+            padding: 12px 16px;
+            bottom: 70px;
+            left: -10px;
+            min-width: 200px;
+            box-shadow: var(--shadow);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: var(--transition);
+            pointer-events: all;
+        }
+        
+        .woofy_speech_bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-top: 8px solid white;
+        }
+        
+        .woofy_speech_bubble--show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        .woofy_speech_bubble--error {
+            background: #ffebee;
+            color: var(--danger-color);
+        }
+        
+        .woofy_speech_bubble__text {
+            font-size: 14px;
+            color: var(--text-color);
+        }
+        
+        .woofy_speech_bubble__text a {
+            display: inline-block;
+            margin: 0 5px;
+            transition: var(--transition);
+        }
+        
+        .woofy_speech_bubble__text a:hover {
+            transform: scale(1.2);
+        }
+        
+        @keyframes earWiggleL {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(-5deg); }
+        }
+        
+        @keyframes earWiggleR {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(5deg); }
+        }
+        
+        /* Rocket Animation */
+        .content_animation_rocket {
+            position: fixed;
+            bottom: -70px;
+            right: 50px;
+            font-size: 50px;
+            transition: all 0.6s ease-in;
+            opacity: 1;
+            z-index: 40;
+            pointer-events: none;
+        }
+        
+        .content_animation_rocket::before {
+            content: '🚀';
+        }
+        
+        .bloom {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 40px;
+            opacity: 0;
+            transition: all 0.4s ease;
+        }
+        
+        .bloom::before {
+            content: '💥';
+        }
+        
+        .bloom--show {
+            transform: translate(-50%, -50%) scale(2);
+            opacity: 1;
+        }
+        
+        /* File Management Section */
+        #theFiles {
+            display: none;
+            background: var(--bg-white);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+            margin-top: 20px;
+        }
+        
+        #fileControls {
+            margin-bottom: 20px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        
+        #fileControls button {
+            background: var(--secondary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: var(--transition);
+            font-weight: 500;
+        }
+        
+        #fileControls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+        }
+        
+        #recompress {
+            background: var(--primary-color);
+            display: none;
+        }
+        
+        #recompress.recompress--show {
+            display: block;
+        }
+        
+        .settings_panel {
+            width: 100%;
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            background: #f8f9fa;
+            border-radius: var(--radius);
+            margin-top: 10px;
+        }
+        
+        #fileControls.show_settings .settings_panel {
+            max-height: 500px;
+            padding: 20px;
+        }
+        
+        .settings_panel h3 {
+            margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+        
+        .setting_group {
+            margin-bottom: 15px;
+        }
+        
+        .setting_group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            font-size: 0.9rem;
+        }
+        
+        .setting_group input[type="range"] {
+            width: 100%;
+            margin: 5px 0;
+        }
+        
+        .setting_group input[type="number"],
+        .setting_group input[type="text"] {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            font-size: 0.9rem;
+        }
+        
+        .setting_group input[type="checkbox"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+        
+        .setting_image_quality__val {
+            font-weight: 600;
+            color: var(--primary-color);
+        }
+        
+        /* File List */
+        #fileList ul {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        
+        #fileList li {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+            transition: var(--transition);
+        }
+        
+        #fileList li:hover {
+            background: #f8f9fa;
+        }
+        
+        #fileList li:last-child {
+            border-bottom: none;
+        }
+        
+        #fileList li.file_converted {
+            background: linear-gradient(90deg, #f0fdf7 0%, transparent 100%);
+        }
+        
+        .file_done_icon {
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .img_wrapper {
+            position: relative;
+            width: 80px;
+            height: 80px;
+            flex-shrink: 0;
+            border-radius: var(--radius);
+            overflow: hidden;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+        
+        .img_wrapper:hover {
+            transform: scale(1.05);
+            box-shadow: var(--shadow);
+        }
+        
+        .img_wrapper img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .img_wrapper svg {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(75, 211, 123, 0.9);
+            padding: 8px;
+            border-radius: 50%;
+            opacity: 0;
+            transition: var(--transition);
+        }
+        
+        .img_wrapper:hover svg {
+            opacity: 1;
+        }
+        
+        .fileContent {
+            flex-grow: 1;
+            min-width: 0;
+        }
+        
+        .fileTitle {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 5px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .fileSize {
+            display: block;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+        
+        .fileSize strong {
+            color: var(--primary-color);
+        }
+        
+        .fileNewDownload {
+            cursor: pointer;
+            padding: 8px;
+            border-radius: var(--radius);
+            transition: var(--transition);
+        }
+        
+        .fileNewDownload:hover {
+            background: #f0fdf7;
+        }
+        
+        .fileNewDownload svg {
+            width: 24px;
+            height: 24px;
+        }
+        
+        .fileNewSize {
+            font-weight: 700;
+            color: var(--primary-color);
+            font-size: 1rem;
+            min-width: 60px;
+            text-align: right;
+        }
+        
+        /* Progress and Status */
+        .compression_status {
+            font-size: 1rem;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: var(--text-color);
+        }
+        
+        .compression_status--complete {
+            color: var(--primary-color);
+        }
+        
+        #compress_progress {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--text-color);
+        }
+        
+        #compress_progress.compression_complete {
+            color: var(--primary-color);
+        }
+        
+        #progressbar {
+            height: 24px;
+            background: #e9ecef;
+            border-radius: 12px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        
+        #progressbar span {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-dark));
+            width: 0%;
+            transition: width 0.3s ease;
+            border-radius: 12px;
+        }
+        
+        .fileList_footer {
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 2px solid var(--border-color);
+        }
+        
+        .fileList_footer__beforeAfter,
+        .fileList_footer__totalSaving,
+        .fileList_footer__processing {
+            margin-bottom: 10px;
+            font-size: 0.95rem;
+        }
+        
+        .fileList_footer__beforeAfter strong,
+        .fileList_footer__totalSaving strong {
+            color: var(--primary-color);
+        }
+        
+        .file_controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .file_controls button {
+            flex: 1;
+            min-width: 140px;
+            padding: 12px 20px;
+            border: none;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
+            transition: var(--transition);
+        }
+        
+        #clear_added_files {
+            background: #6c757d;
+            color: white;
+        }
+        
+        #clear_added_files:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+        }
+        
+        #uploadControlButton {
+            background: var(--secondary-color);
+            color: white;
+        }
+        
+        #uploadControlButton:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        .file_download {
+            background: var(--primary-color);
+            color: white;
+        }
+        
+        .file_download:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+        }
+        
+        /* Compare Modal */
+        #compare {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        
+        #compare.compare--show {
+            display: flex;
+        }
+        
+        .compare_close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 30px;
+            cursor: pointer;
+            z-index: 1001;
+            padding: 10px;
+            transition: var(--transition);
+        }
+        
+        .compare_close:hover {
+            transform: scale(1.2);
+        }
+        
+        .compare__inner {
+            position: relative;
+            width: 90%;
+            max-width: 1200px;
+            height: 80vh;
+            overflow: hidden;
+            border-radius: var(--radius);
+        }
+        
+        #compare.compare--portrait .compare__inner {
+            max-width: 600px;
+        }
+        
+        #compare.compare--imageHeight .compare__inner {
+            height: auto;
+        }
+        
+        .before_image,
+        .after_image {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+        
+        .before_image {
+            overflow: hidden;
+            width: 50%;
+        }
+        
+        .before_image::after,
+        .after_image::after {
+            content: attr(data-size);
+            position: absolute;
+            top: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 5px 10px;
+            border-radius: var(--radius);
+            font-size: 0.85rem;
+        }
+        
+        .before_image::after {
+            left: 10px;
+        }
+        
+        .after_image::after {
+            right: 10px;
+        }
+        
+        .before_image img,
+        .after_image img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+        
+        .info_compare_slider {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80%;
+            max-width: 400px;
+            z-index: 1001;
+            cursor: pointer;
+        }
+        
+        .compare_labels {
+            position: absolute;
+            bottom: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 1001;
+        }
+        
+        .compare_labels span {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 8px 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            transition: var(--transition);
+            font-weight: 600;
+        }
+        
+        .compare_labels span:hover {
+            background: white;
+            transform: translateY(-2px);
+        }
+        
+        /* Responsive Design - Mobile First */
+        @media (max-width: 768px) {
+            .main {
+                padding: 15px;
+            }
+            
+            header {
+                padding: 15px 0 20px;
+            }
+            
+            .uploadDropWrap {
+                padding: 40px 15px;
+            }
+            
+            .woofy {
+                font-size: 40px;
+                bottom: 10px;
+                left: 10px;
+            }
+            
+            .woofy__eyes,
+            .woofy__eyes_closed {
+                font-size: 15px;
+                top: 15px;
+                left: 10px;
+            }
+            
+            .woofy_speech_bubble {
+                min-width: 150px;
+                font-size: 12px;
+                padding: 8px 12px;
+                bottom: 50px;
+            }
+            
+            .content_animation_rocket {
+                right: 20px;
+                font-size: 40px;
+            }
+            
+            #theFiles {
+                padding: 15px;
+            }
+            
+            #fileControls {
+                flex-direction: column;
+            }
+            
+            #fileControls button {
+                width: 100%;
+            }
+            
+            #fileList li {
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            
+            .img_wrapper {
+                width: 60px;
+                height: 60px;
+            }
+            
+            .fileContent {
+                flex-basis: calc(100% - 80px);
+            }
+            
+            .fileNewSize {
+                min-width: auto;
+            }
+            
+            .file_controls {
+                flex-direction: column;
+            }
+            
+            .file_controls button {
+                width: 100%;
+                min-width: auto;
+            }
+            
+            .compare__inner {
+                width: 95%;
+                height: 60vh;
+            }
+            
+            .compare_labels {
+                flex-direction: column;
+                gap: 10px;
+                bottom: 80px;
+            }
+        }
+        
+        /* Added files state */
+        #theApp.addedFiles .woofy {
+            bottom: 80px;
+        }
+        
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+        
+        /* Loading State */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .loading {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            *,
+            *::before,
+            *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            .woofy,
+            .content_animation_rocket,
+            #compare {
+                display: none !important;
+            }
+        }
     </style>
 </head>
 <body id="theApp">
-
-    <div class="main">
-        <h1>🚀 Woofy Image Compressor</h1>
-
-        <div class="uploadDropWrap">
-            <input type="file" class="form_file_upload_field" accept="image/jpeg, image/png" multiple style="display: none;">
-            <div id="uploadDrop" class="dropArea">
-                <p class="dropboxTitle">Drag & Drop .png or .jpg files here!</p>
-                <button id="uploadDropButton">or Click to Select Files</button>
-            </div>
-        </div>
-
-        <div class="woofy">
-            <div class="woofy__eyes">👀</div>
-            <div class="woofy__eyes_closed" style="display:none;">--</div>
-            <div class="woofy__ears_left">👂</div>
-            <div class="woofy__ears_right">👂</div>
-            <div class="woofy__suit">🧑‍🚀</div>
-            <div class="woofy__suit_helmet"> helmet </div>
-            <div class="woofy_speech_bubble">
-                <span class="woofy_speech_bubble__text">Hi there!</span>
-            </div>
-        </div>
-        
-        <div class="content_animation_rocket" style="position: fixed; bottom: -70px; right: 50px; transition: all 0.6s ease-in; opacity: 1;">
-            <div class="bloom">💥</div>
-        </div>
-        <div id="theFiles">
-            <div id="fileControls">
-                <button onclick="showSettings()">⚙️ Settings</button>
-                <button id="recompress" onclick="recompress()" style="display:none;">🔄 Recompress</button>
-                <div id="settings" class="settings_panel">
-                    <h3>Compression Settings</h3>
-                    <div class="setting_group">
-                        <label>Quality (JPG/WEBP):</label>
-                        <input type="range" id="setting_image_quality" min="1" max="100" value="70" 
-                               oninput="updateQuality(this.value, false)" onchange="updateQuality(this.value, true)">
-                        <span class="setting_image_quality__val">70%</span>
-                    </div>
-                    <div class="setting_group">
-                        <label>Max Width/Height (px):</label>
-                        <input type="number" id="setting_image_widthHeight" placeholder="e.g., 1920" 
-                               oninput="updateMaxSize(this.value, false)" onchange="updateMaxSize(this.value, true)">
-                    </div>
-                    <div class="setting_group">
-                        <label>Convert to WebP:</label>
-                        <input type="checkbox" id="setting_image_webp" onchange="updateWebpSetting()">
-                    </div>
-                    <div class="setting_group">
-                        <label>Filename Prefix (e.g., '-min'):</label>
-                        <input type="text" id="setting_image_prefix" placeholder="e.g., -min" 
-                               oninput="updateImagePrefix(this.value, false)" onchange="updateImagePrefix(this.value, true)">
-                    </div>
-                </div>
-            </div>
-
-            <div id="fileList">
-                <ul>
-                    </ul>
-            </div>
-
-            <div class="fileList_footer">
-                <div class="compression_status">Waiting for files...</div>
-                <div id="compress_progress" data-compressed="0">
-                    <span id="progressbar"><span></span></span>
-                    <i style="font-style: normal;">0</i>%
-                </div>
-                <div class="fileList_footer__beforeAfter"></div>
-                <div class="fileList_footer__totalSaving"></div>
-                <div class="fileList_footer__processing" style="display: none;"></div>
-
-                <div class="file_controls">
-                    <button id="clear_added_files">🗑️ Clear Files</button>
-                    <button id="uploadControlButton">➕ Add More Files</button>
-                    <button class="file_download" onclick="zipFiles()" data-compressed="0">
-                        <i>Download Zip</i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div id="compare" class="compare">
-            <span class="compare_close" onclick="closeCompare()">❌</span>
-            <div class="compare__inner">
-                <div class="before_image" data-size="Before (0 Kb)"></div>
-                <div class="after_image" data-size="After (0 Kb)"></div>
-                <input type="range" min="0" max="100" value="50" class="info_compare_slider" 
-                       id="compare_slider" oninput="moveCompareSlider()">
-            </div>
-            <div class="compare_labels">
-                <span onclick="demoCompare(true)">Original</span>
-                <span onclick="demoCompare(false)">Compressed</span>
-            </div>
-        </div>
-
-    </div>
-
-    <script src="lib/image-compression.js"></script>
-    <script src="lib/compressor.js"></script>
-    <script src="lib/webp-enc.js"></script> <script src="lib/jszip.min.js"></script>
-    <script src="lib/FileSaver.min.js"></script>
     
-    <script src="my-app.js"></script>
+    <main class="main">
+        <header>
+            <h1>🐕 Woofy Image Compressor</h1>
+            <p class="subtitle">Compress PNG & JPG images up to 90% • Convert to WebP • Free & Secure</p>
+        </header>
+        
+        <article>
+            <section class="uploadDropWrap">
+                <input type="file" class="form_file_upload_field" accept="image/jpeg,image/jpg,image/png" multiple aria-label="Select image files to compress">
+                <div id="uploadDrop" class="dropArea" role="button" tabindex="0" aria-label="Drag and drop images here or click to select">
+                    <p class="dropboxTitle">📁 Drag & Drop .png or .jpg files here!</p>
+                    <p class="dropboxSubtitle">Or paste images from clipboard (Ctrl+V / Cmd+V)</p>
+                    <button id="uploadDropButton" type="button">📤 or Click to Select Files</button>
+                </div>
+            </section>
+            
+            <!-- Woofy Mascot -->
+            <div class="woofy" role="img" aria-label="Woofy mascot">
+                <div class="woofy__eyes">👀</div>
+                <div class="woofy__eyes_closed">--</div>
+                <div class="woofy__ears_left">👂</div>
+                <div class="woofy__ears_right">👂</div>
+                <div class="woofy__suit">🧑‍🚀</div>
+                <div class="woofy__suit_helmet" aria-hidden="true"></div>
+                <div class="woofy_speech_bubble" role="status" aria-live="polite">
+                    <span class="woofy_speech_bubble__text">Hi there! 👋</span>
+                </div>
+            </div>
+            
+            <!-- Rocket Animation -->
+            <div class="content_animation_rocket" aria-hidden="true">
+                <div class="bloom"></div>
+            </div>
+            
+            <!-- File Management Section -->
+            <section id="theFiles">
+                <div id="fileControls">
+                    <button type="button" onclick="showSettings()" aria-expanded="false" aria-controls="settings">⚙️ Settings</button>
+                    <button type="button" id="recompress" onclick="recompress()">🔄 Recompress</button>
+                    
+                    <div id="settings" class="settings_panel" role="region" aria-labelledby="settings-heading">
+                        <h3 id="settings-heading">Compression Settings</h3>
+                        
+                        <div class="setting_group">
+                            <label for="setting_image_quality">Quality (JPG/WEBP): <span class="setting_image_quality__val">70%</span></label>
+                            <input 
+                                type="range" 
+                                id="setting_image_quality" 
+                                min="1" 
+                                max="100" 
+                                value="70" 
+                                oninput="updateQuality(this.value, false)" 
+                                onchange="updateQuality(this.value, true)"
+                                aria-valuemin="1"
+                                aria-valuemax="100"
+                                aria-valuenow="70"
+                            >
+                        </div>
+                        
+                        <div class="setting_group">
+                            <label for="setting_image_widthHeight">Max Width/Height (px):</label>
+                            <input 
+                                type="number" 
+                                id="setting_image_widthHeight" 
+                                placeholder="e.g., 1920" 
+                                oninput="updateMaxSize(this.value, false)" 
+                                onchange="updateMaxSize(this.value, true)"
+                                min="100"
+                                step="100"
+                            >
+                        </div>
+                        
+                        <div class="setting_group">
+                            <label for="setting_image_webp">
+                                <input 
+                                    type="checkbox" 
+                                    id="setting_image_webp" 
+                                    onchange="updateWebpSetting()"
+                                >
+                                Convert to WebP format
+                            </label>
+                        </div>
+                        
+                        <div class="setting_group">
+                            <label for="setting_image_prefix">Filename Prefix (e.g., '-min'):</label>
+                            <input 
+                                type="text" 
+                                id="setting_image_prefix" 
+                                placeholder="e.g., -min" 
+                                oninput="updateImagePrefix(this.value, false)" 
+                                onchange="updateImagePrefix(this.value, true)"
+                                maxlength="20"
+                            >
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- File List -->
+                <div id="fileList" role="list">
+                    <ul></ul>
+                </div>
+                
+                <!-- Footer with Progress -->
+                <footer class="fileList_footer">
+                    <div class="compression_status" role="status" aria-live="polite">Waiting for files...</div>
+                    
+                    <div id="compress_progress" data-compressed="0" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+                        <span id="progressbar"><span></span></span>
+                        <i style="font-style: normal;">0</i>%
+                    </div>
+                    
+                    <div class="fileList_footer__beforeAfter" aria-live="polite"></div>
+                    <div class="fileList_footer__totalSaving" aria-live="polite"></div>
+                    <div class="fileList_footer__processing" style="display: none;" aria-live="polite"></div>
+                    
+                    <div class="file_controls">
+                        <button type="button" id="clear_added_files">🗑️ <i>Clear Files</i></button>
+                        <button type="button" id="uploadControlButton">➕ <i>Add More Files</i></button>
+                        <button type="button" class="file_download" onclick="zipFiles()" data-compressed="0">
+                            <i>📦 Download Zip</i>
+                        </button>
+                    </div>
+                </footer>
+            </section>
+            
+            <!-- Before/After Compare Modal -->
+            <div id="compare" class="compare" role="dialog" aria-modal="true" aria-label="Before and after image comparison">
+                <span class="compare_close" onclick="closeCompare()" role="button" tabindex="0" aria-label="Close comparison">❌</span>
+                <div class="compare__inner">
+                    <div class="before_image" data-size="Before (0 Kb)"></div>
+                    <div class="after_image" data-size="After (0 Kb)"></div>
+                    <input 
+                        type="range" 
+                        min="0" 
+                        max="100" 
+                        value="50" 
+                        class="info_compare_slider" 
+                        id="compare_slider" 
+                        oninput="moveCompareSlider()"
+                        aria-label="Comparison slider"
+                    >
+                </div>
+                <div class="compare_labels">
+                    <span onclick="demoCompare(true)" role="button" tabindex="0">📷 Original</span>
+                    <span onclick="demoCompare(false)" role="button" tabindex="0">✨ Compressed</span>
+                </div>
+            </div>
+        </article>
+    </main>
+    
+    <!-- External Libraries -->
+    <script defer src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/@jsquash/webp@1.2.0/codec/enc/webp_enc.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    
+    <!-- Main Application Script -->
+    <script defer src="my-app.js"></script>
+    
+    <!-- Clipboard Paste Support -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Clipboard paste support for images
+            window.addEventListener('paste', function(e) {
+                const items = e.clipboardData?.items;
+                if (!items) return;
+                
+                const imageFiles = [];
+                for (let i = 0; i < items.length; i++) {
+                    if (items[i].type.indexOf('image') !== -1) {
+                        const blob = items[i].getAsFile();
+                        if (blob) {
+                            imageFiles.push(blob);
+                        }
+                    }
+                }
+                
+                if (imageFiles.length > 0) {
+                    e.preventDefault();
+                    
+                    // Create a FileList-like object
+                    const dataTransfer = new DataTransfer();
+                    imageFiles.forEach(file => dataTransfer.items.add(file));
+                    
+                    const pastedFiles = dataTransfer.files;
+                    
+                    // Trigger file processing
+                    if (typeof hideDropField === 'function') hideDropField();
+                    if (typeof animateRocket === 'function') animateRocket();
+                    if (typeof allAddedFiles !== 'undefined') {
+                        allAddedFiles.push(pastedFiles);
+                    }
+                    if (typeof processFiles === 'function') {
+                        processFiles(pastedFiles);
+                    }
+                }
+            });
+            
+            // Keyboard accessibility for drop area
+            const uploadDrop = document.getElementById('uploadDrop');
+            if (uploadDrop) {
+                uploadDrop.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        document.querySelector('.form_file_upload_field')?.click();
+                    }
+                });
+            }
+            
+            // Keyboard accessibility for compare close
+            const compareClose = document.querySelector('.compare_close');
+            if (compareClose) {
+                compareClose.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        if (typeof closeCompare === 'function') closeCompare();
+                    }
+                });
+            }
+            
+            // ESC key to close compare modal
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    const compareModal = document.getElementById('compare');
+                    if (compareModal?.classList.contains('compare--show')) {
+                        if (typeof closeCompare === 'function') closeCompare();
+                    }
+                }
+            });
+        });
+    </script>
 </body>
 </html>
