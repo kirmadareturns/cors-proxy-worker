@@ -1116,9 +1116,14 @@
     <!-- External Libraries -->
     <script defer src="https://cdn.jsdelivr.net/npm/browser-image-compression@2.0.2/dist/browser-image-compression.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/compressorjs@1.2.1/dist/compressor.min.js"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/@jsquash/webp@1.2.0/codec/enc/webp_enc.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
+    
+    <!-- WebP Encoder Module -->
+    <script type="module">
+        import webp_enc from 'https://cdn.jsdelivr.net/npm/@jsquash/webp@1.2.0/codec/enc/webp_enc.js';
+        window.webp_enc = webp_enc;
+    </script>
     
     <!-- Main Application Script -->
     <script defer src="my-app.js"></script>
