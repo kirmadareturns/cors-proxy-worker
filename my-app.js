@@ -7,9 +7,7 @@ let compressedFiles = {};
 let webpEncoder = null;
 let processCount = 0;
 let compressionStatus = {beforeSize:0, afterSize: 0, saved: 0, percent: 0};
-let animatingRocket = false;
-let woofyIdleInterVal, woofyEarsInterVal, woofyEarsRInterVal;
-let quality = 0.70; let maxWH = false; let webpConversion = 0; let imagePrefix = ''; let settingsChanged = false;
+let targetSizeKB = 150; let maxWH = false; let webpConversion = 0; let imagePrefix = ''; let settingsChanged = false;
 
 //Init App
 document.addEventListener("DOMContentLoaded", function() {
@@ -21,7 +19,6 @@ document.addEventListener("DOMContentLoaded", function() {
    const module = webp_enc();
    module.then((obj) =>{
       webpEncoder = obj; 
-      //console.log(obj.version());
    });
 
    //Handle Drag/Drop Events
@@ -48,7 +45,6 @@ document.addEventListener("DOMContentLoaded", function() {
    //Handle Form Upload Events
    document.querySelector('.form_file_upload_field').onchange = function(){
       hideDropField();
-      animateRocket();
       const formFiles = document.querySelector('.form_file_upload_field').files;
       allAddedFiles.push(formFiles);
       processFiles(formFiles);
@@ -72,88 +68,28 @@ document.addEventListener("DOMContentLoaded", function() {
    //Mobile Changes
    if(isMobile){
       document.querySelector('.dropboxTitle').textContent = 'Select .png or .jpg files to Compress!';
-      document.querySelector('.woofy_speech_bubble__text').textContent = 'Select Images to Get Started!';
       document.querySelector('#uploadControlButton i').textContent = 'Add';
       document.querySelector('#clear_added_files i').textContent = 'Clear';
    }
 
-   //Woofy
-   woofyIdle();
-   setTimeout(() => {
-      document.querySelector('.woofy_speech_bubble').classList.add('woofy_speech_bubble--show');
-   }, 400);
-
    //Animation
    document.addEventListener('compression_start', function (e) {
-      if(woofyIdleInterVal) {clearInterval(woofyIdleInterVal)};
-      if(woofyEarsInterVal) {clearInterval(woofyEarsInterVal)};
-      if(woofyEarsRInterVal) {clearInterval(woofyEarsRInterVal)};
-      document.querySelector('.woofy__suit').classList.add('woofy__suit--show');
-      document.querySelector('.woofy__suit_helmet').classList.add('woofy__suit_helmet--show');
-      document.querySelector('.woofy_speech_bubble').classList.remove('woofy_speech_bubble--show');
       document.getElementById('compress_progress').classList.remove('compression_complete');
-      setTimeout(() => {
-         document.querySelector('.woofy_speech_bubble__text').textContent = 'WEEEEEEEE!!!!!';
-         document.querySelector('.woofy_speech_bubble').classList.add('woofy_speech_bubble--show');
-      }, 300);
-      
    }, false);
 
    document.addEventListener('compression_complete', function (e) { 
-      if(animatingRocket === false){
-         animatingRocket = true;
-         const rocket = document.querySelector('.content_animation_rocket');
-         setTimeout(() => {
-            rocket.style.transition = 'none';
-            rocket.style.opacity = 0;
-            rocket.style.bottom = '-500px';
-         }, 600);
-
-         setTimeout(() => {
-            rocket.style.transition = 'all 0.6s ease-in';
-         }, 650);
-         setTimeout(() => {
-            rocket.style.opacity = 1;
-            rocket.style.bottom = '-70px';
-            animatingRocket = false;
-            document.querySelector('.woofy_speech_bubble').classList.remove('woofy_speech_bubble--show');
-         }, 700);
-         setTimeout(() => {
-            document.querySelector('.woofy__suit').classList.remove('woofy__suit--show');
-            document.querySelector('.woofy__suit_helmet').classList.remove('woofy__suit_helmet--show');
-            document.querySelector('.woofy_speech_bubble__text').textContent = 'All Done!!!!!';
-            document.querySelector('.woofy_speech_bubble').classList.add('woofy_speech_bubble--show');
-         }, 1400);
-         //Share Buttons
-         setTimeout(() => {
-            const alreadyShared = localStorage.getItem('shared');
-            if(!alreadyShared){
-               const socialIcons = shareButtonsHTML();
-               document.querySelector('.woofy_speech_bubble__text').innerHTML = socialIcons;
-            }
-         }, 3400);
-      }
       setTimeout(() => {
          document.getElementById('compress_progress').classList.add('compression_complete');
          document.querySelector('.compression_status').classList.add('compression_status--complete');
          const totalReducedVerb = compressionStatus.afterSize ? ' Reduced '+readableFileSize(compressionStatus.saved, true)+' <span>('+compressionStatus.percent+'%)</span>' : '';
          document.querySelector('.compression_status').innerHTML = `✔ Compressed ${Object.keys(compressedFiles).length}/${uploadedFiles.length} Images. ${totalReducedVerb}`;
       }, 1000);
-      woofyIdle();
-
    }, false);
 
    //Handle Errors
    document.addEventListener('compression_error', function (e) { 
       if(e.detail.error){
-         document.querySelector('.woofy_speech_bubble').classList.remove('woofy_speech_bubble--show');
-         document.querySelector('.woofy_speech_bubble__text').textContent = e.detail.error;
-         setTimeout(() => {
-            document.querySelector('.woofy_speech_bubble').classList.add('woofy_speech_bubble--show', 'woofy_speech_bubble--error');
-         }, 300);
-         setTimeout(() => {
-            document.querySelector('.woofy_speech_bubble').classList.remove('woofy_speech_bubble--show', 'woofy_speech_bubble--error');
-         }, 2000);
+         alert(e.detail.error);
       }
    }, false);
 
@@ -186,25 +122,6 @@ window.addEventListener("load", function(){
 });
 
 //Functions
-function demoCompare(original){
-   document.querySelector('.info_compare_slider').classList.remove('info_compare_slider-active_original', 'info_compare_slider-active_compressed');
-   document.querySelector('.info_compare_slider').classList.add(original ? 'info_compare_slider-active_original' : 'info_compare_slider-active_compressed');
-}
-
-function shareButtonsHTML(){
-   const siteURL = location.href
-   const fbIcon = '<a href="https://www.facebook.com/sharer.php?u='+siteURL+'" onclick="socialClicked()" target="_blank"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 16 16"><g fill="#4264ce"><path d="M16 8.049c0-4.446-3.582-8.05-8-8.05C3.58 0-.002 3.603-.002 8.05c0 4.017 2.926 7.347 6.75 7.951v-5.625h-2.03V8.05H6.75V6.275c0-2.017 1.195-3.131 3.022-3.131c.876 0 1.791.157 1.791.157v1.98h-1.009c-.993 0-1.303.621-1.303 1.258v1.51h2.218l-.354 2.326H9.25V16c3.824-.604 6.75-3.934 6.75-7.951z"/></g><rect x="0" y="0" width="16" height="16" fill="rgba(0, 0, 0, 0)" /></svg></a>';
-   const twIcon = '<a href="https://twitter.com/share?url='+siteURL+'" onclick="socialClicked()" target="_blank"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none"><path d="M23.643 4.937c-.835.37-1.732.62-2.675.733a4.67 4.67 0 0 0 2.048-2.578a9.3 9.3 0 0 1-2.958 1.13a4.66 4.66 0 0 0-7.938 4.25a13.229 13.229 0 0 1-9.602-4.868c-.4.69-.63 1.49-.63 2.342A4.66 4.66 0 0 0 3.96 9.824a4.647 4.647 0 0 1-2.11-.583v.06a4.66 4.66 0 0 0 3.737 4.568a4.692 4.692 0 0 1-2.104.08a4.661 4.661 0 0 0 4.352 3.234a9.348 9.348 0 0 1-5.786 1.995a9.5 9.5 0 0 1-1.112-.065a13.175 13.175 0 0 0 7.14 2.093c8.57 0 13.255-7.098 13.255-13.254c0-.2-.005-.402-.014-.602a9.47 9.47 0 0 0 2.323-2.41l.002-.003z" fill="#54bdff"/></g></svg></a>';
-   const lnIcon = '<a href="https://www.linkedin.com/shareArticle?mini=true&amp;url='+siteURL+'" onclick="socialClicked()" target="_blank"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><g fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M1 2.838A1.838 1.838 0 0 1 2.838 1H21.16A1.837 1.837 0 0 1 23 2.838V21.16A1.838 1.838 0 0 1 21.161 23H2.838A1.838 1.838 0 0 1 1 21.161V2.838zm8.708 6.55h2.979v1.496c.43-.86 1.53-1.634 3.183-1.634c3.169 0 3.92 1.713 3.92 4.856v5.822h-3.207v-5.106c0-1.79-.43-2.8-1.522-2.8c-1.515 0-2.145 1.089-2.145 2.8v5.106H9.708V9.388zm-5.5 10.403h3.208V9.25H4.208v10.54zM7.875 5.812a2.063 2.063 0 1 1-4.125 0a2.063 2.063 0 0 1 4.125 0z" fill="#257fa9"/></g></svg></a>';
-   const socialIcons = '<div>'+fbIcon+twIcon+lnIcon+'</div>';
-   return'<div style="color:#1b2023">Introduce me to your Friends?'+socialIcons+'</div>';
-}
-
-function socialClicked(){
-   console.log('shared');
-   localStorage.setItem('shared', 1);
-}
-
 function highlight(e) {
    e.preventDefault(); e.stopPropagation();
    dropArea.classList.add('highlight');
@@ -229,7 +146,6 @@ function handleDrop(e) {
       }
 
       hideDropField();
-      animateRocket();
       allAddedFiles.push(files);
       processFiles(files);
    }
@@ -251,32 +167,19 @@ function showDropField(){
    document.querySelector('#theApp').classList.remove('addedFiles');
 }
 
-function animateRocket(){
-   setTimeout(() => {
-      document.querySelector('.content_animation_rocket').style.bottom = '900px';
-      document.querySelector('.bloom').classList.add('bloom--show');
-   }, 300);
-   setTimeout(() => {
-      document.querySelector('.bloom').classList.remove('bloom--show');
-   }, 700);
-}
-
 async function processFiles(files){
-   const promises  = [];
-   //console.log(dt);
    const compressStartEvent = new CustomEvent('compression_start');
    document.dispatchEvent(compressStartEvent);
-   // console.log('Processing Start!!!!' , `${new Date().getMinutes()}:${new Date().getSeconds()}`);
+   
    const filesToCompress = [];
 
+   // First pass: render all files
    for (let i = 0; i < files.length; i++) {
       const UID  = create_UUID();
       const file = files[i];
-      //Compress JPG
       if( file.type === 'image/jpg' || file.type === 'image/jpeg' || file.type === 'image/png'){
          const imageBase64 = await window.imageCompression.getDataUrlFromFile(file);
          const newNFile = {id: UID, fileName:file.name, size: parseFloat(file.size.toFixed(1)), sizeAfter:0, image: imageBase64 };
-         // console.log(newNFile);
          filesToCompress.push(newNFile);
          uploadedFiles.push(newNFile);
          renderFile(newNFile);
@@ -288,34 +191,113 @@ async function processFiles(files){
    //Reset Process Count
    processCount = 0;
 
-   filesToCompress.forEach((newFile, index)=> {
+   // Second pass: compress all files in parallel
+   const compressionPromises = filesToCompress.map(async (newFile, index) => {
       const file = files[index];
+      
       if(webpConversion === 1){
-         //Convert Image to WebP
-         ConvertToWebP(newFile.image).then((compressedIMGBlob)=> {
-            //console.log(compressedIMGBlob);
-            completeCompression(newFile, compressedIMGBlob);
-         });
-      }else{
-         //Compress JPG
-         if( file.type === 'image/jpg' || file.type === 'image/jpeg'){
-            const promiseJ = compressJpg(file).then((compressedIMGBlob)=> {
-               completeCompression(newFile, compressedIMGBlob.size < file.size ? compressedIMGBlob : file);
-            })
-            promises.push(promiseJ);
+         //Convert Image to WebP with adaptive compression
+         const compressedIMGBlob = await compressToTargetSizeWebP(newFile.image, file);
+         completeCompression(newFile, compressedIMGBlob);
+      } else {
+         //Adaptive compression based on file type
+         if(file.type === 'image/jpg' || file.type === 'image/jpeg'){
+            const compressedIMGBlob = await compressToTargetSizeJPG(file);
+            completeCompression(newFile, compressedIMGBlob.size < file.size ? compressedIMGBlob : file);
          }
-         //Compress PNG
+         
          if(file.type === 'image/png'){
-            const options = {   maxSizeMB: 2,  maxWidthOrHeight: maxWH ? maxWH : 5000,  useWebWorker: true,  maxIteration: 10  }
-            const promiseP = imageCompression(file, options).then((compressedIMGBlob)=>{
-               completeCompression(newFile, compressedIMGBlob.size < file.size ? compressedIMGBlob : file);
-            })
-            promises.push(promiseP);
+            const compressedIMGBlob = await compressToTargetSizePNG(file);
+            completeCompression(newFile, compressedIMGBlob.size < file.size ? compressedIMGBlob : file);
          }
       }
-   })
+   });
 
+   // Wait for all compressions to complete
+   await Promise.all(compressionPromises);
+}
 
+// Adaptive compression for JPG - binary search for target size
+async function compressToTargetSizeJPG(file) {
+   const targetBytes = targetSizeKB * 1024;
+   let quality = 0.95;
+   let bestResult = null;
+   let bestQuality = 0.70;
+   
+   // Try different quality levels
+   while (quality >= 0.70) {
+      const compressed = await compressJpg(file, quality);
+      
+      if (compressed.size <= targetBytes) {
+         // Found a result within target - return immediately
+         return compressed;
+      }
+      
+      // Store best result in case we can't meet target
+      if (!bestResult || compressed.size < bestResult.size) {
+         bestResult = compressed;
+         bestQuality = quality;
+      }
+      
+      quality -= 0.05;
+   }
+   
+   // Return best result we could achieve
+   return bestResult || file;
+}
+
+// Adaptive compression for PNG - binary search for target size
+async function compressToTargetSizePNG(file) {
+   const targetBytes = targetSizeKB * 1024;
+   let maxIteration = 5;
+   let bestResult = null;
+   
+   // Try different iteration levels (5 down to 1 for speed)
+   while (maxIteration >= 1) {
+      const options = {   
+         maxSizeMB: targetSizeKB / 1024,  
+         maxWidthOrHeight: maxWH ? maxWH : 5000,  
+         useWebWorker: true,  
+         maxIteration: maxIteration  
+      }
+      
+      const compressed = await imageCompression(file, options);
+      
+      if (compressed.size <= targetBytes) {
+         return compressed;
+      }
+      
+      if (!bestResult || compressed.size < bestResult.size) {
+         bestResult = compressed;
+      }
+      
+      maxIteration--;
+   }
+   
+   return bestResult || file;
+}
+
+// Adaptive compression for WebP
+async function compressToTargetSizeWebP(imageData, originalFile) {
+   const targetBytes = targetSizeKB * 1024;
+   let quality = 95;
+   let bestResult = null;
+   
+   while (quality >= 70) {
+      const compressed = await ConvertToWebP(imageData, quality);
+      
+      if (compressed.size <= targetBytes) {
+         return compressed;
+      }
+      
+      if (!bestResult || compressed.size < bestResult.size) {
+         bestResult = compressed;
+      }
+      
+      quality -= 5;
+   }
+   
+   return bestResult || originalFile;
 }
 
 function updateStatus(){
@@ -323,13 +305,9 @@ function updateStatus(){
    const converted = Object.keys(compressedFiles).length;
    const completedProgress = (converted/total*100).toFixed(0);
    completed = completedProgress && (completed < 101) ? parseInt(completedProgress, 10) : 0;
-   //console.log(total, converted, completed);
    updateElementStatus(completed);
 
    if(total === converted){
-      //console.warn('All Done!!!', completed);
-      //completed = 0;
-      //updateElementStatus(completed);
       const completeEvent = new CustomEvent('compression_complete');
       document.dispatchEvent(completeEvent);
    }
@@ -343,7 +321,6 @@ function updateElementStatus(completed){
       const compressedPercent = (totalAfterCompress/totalUploadSize*100).toFixed(0);
       const compressedPercentR = compressedPercent > 2 ? 100 - compressedPercent : 0; 
       const totalSaved = totalUploadSize - totalAfterCompress;
-      //console.log(totalUploadSize, totalAfterCompress, compressedPercent);
       compressionStatus = { beforeSize: totalUploadSize, afterSize: totalAfterCompress, saved: totalSaved, percent: compressedPercentR}
       const totalReducedVerb = 'Total Reduced '+readableFileSize(totalSaved, true)+' <span>('+compressedPercentR+'%)</span>';
       document.querySelector('#progressbar span').style.width = completed+'%';
@@ -366,7 +343,6 @@ function updateProcessingStatus(completeCount, totalFiles){
 }
 
 function renderFile(file){
-   //console.log(file);
    let finalHTML = '';
    if(file && file.fileName){
       const fHTML = '<li id="'+file.id+'">'+fileHTML(file)+'</li>';
@@ -380,8 +356,7 @@ function fileHTML(file, done=false){
    const compressedPercent = done ? Math.round(file.sizeAfter/file.size*100) - 100 : 0;
    const doneIcon = done ? '<span class="file_done_icon"><svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 64 64"><circle cx="32" cy="32" r="30" fill="#4bd37b"/><path fill="#fff" d="M46 14L25 35.6l-7-7.2l-7 7.2L25 50l28-28.8z"/><rect x="0" y="0" width="64" height="64" fill="rgba(0, 0, 0, 0)" /></svg></span>' : '';
    const downloadButton = '<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><path d="M19 9h-4V3H9v6H5l7 8zM4 19h16v2H4z" fill="#999999"/></svg>';
-   const viewIcon = '<svg onclick="compareImages(\''+file.id+'\')" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" aria-hidden="true" focusable="false" width="1em" height="1em" preserveAspectRatio="xMidYMid meet" viewBox="0 0 24 24"><path d="M16.325 14.899l5.38 5.38a1.008 1.008 0 0 1-1.427 1.426l-5.38-5.38a8 8 0 1 1 1.426-1.426zM10 16a6 6 0 1 0 0-12a6 6 0 0 0 0 12zm3-5h-2v2a1 1 0 0 1-2 0v-2H7a1 1 0 0 1 0-2h2V7a1 1 0 1 1 2 0v2h2a1 1 0 0 1 0 2z" fill="#ffffff" fill-rule="evenodd"/><rect x="0" y="0" width="24" height="24" fill="rgba(0, 0, 0, 0)" /></svg>';
-   return doneIcon+'<div class="img_wrapper"><img src="'+file.image+'" onclick="compareImages(\''+file.id+'\')">'+(doneIcon && viewIcon)+'</div><div class="fileContent"><span class="fileTitle">'+file.fileName+'</strong></span><span class="fileSize">'+readableFileSize(file.size, true)+' → <strong>'+readableFileSize(file.sizeAfter, true)+'</span></div><div class="fileNewDownload" onclick="downloadFile(\''+file.id+'\')">'+downloadButton+'</div><div class="fileNewSize">'+compressedPercent+'%</div>';
+   return doneIcon+'<div class="img_wrapper"><img src="'+file.image+'"></div><div class="fileContent"><span class="fileTitle">'+file.fileName+'</strong></span><span class="fileSize">'+readableFileSize(file.size, true)+' → <strong>'+readableFileSize(file.sizeAfter, true)+'</span></div><div class="fileNewDownload" onclick="downloadFile(\''+file.id+'\')">'+downloadButton+'</div><div class="fileNewSize">'+compressedPercent+'%</div>';
 }
 
 function reRenderFile(file){
@@ -399,7 +374,7 @@ function create_UUID(){
    return uuid;
 }
 
-function compressJpg(file){
+function compressJpg(file, quality){
    return new Promise((resolve, reject) => {
       new Compressor(file, {
             quality: quality,
@@ -505,18 +480,17 @@ function zipFiles(){
    zip.generateAsync({type:"blob"}).then(function(content) {
       saveAs(content, "compressimage-io.zip");
       fileNames = [];
-      console.log('Zipping Files Compltete!!');
+      console.log('Zipping Files Complete!!');
       document.querySelector('.file_download button i').innerHTML = 'Download Zip';
    });
 }
 
-function updateQuality(value, changeComplete){
-   //console.log(value);
+function updateTargetSize(value, changeComplete){
    if(value){
-      quality = parseInt(value, 10) /100;
-      document.querySelector('.setting_image_quality__val').textContent = value+'%';
+      targetSizeKB = parseInt(value, 10);
+      document.querySelector('.setting_target_size_kb__val').textContent = value+' KB';
       if(changeComplete){
-         localStorage.setItem('compression_strength', quality);
+         localStorage.setItem('compression_targetSize', targetSizeKB);
       }
    }
    showRecompress();
@@ -524,7 +498,6 @@ function updateQuality(value, changeComplete){
 
 function updateMaxSize(value, changeComplete){
    const liveValue = document.querySelector('#setting_image_widthHeight').value;
-   //console.log(liveValue);
    if(liveValue){
       maxWH = parseInt(value, 10);
       if(changeComplete){
@@ -541,7 +514,6 @@ function updateMaxSize(value, changeComplete){
 
 function updateImagePrefix(value, changeComplete){
    const liveValue = document.querySelector('#setting_image_prefix').value;
-   //console.log(liveValue);
    if(liveValue){
       imagePrefix = liveValue;
       if(changeComplete){
@@ -571,7 +543,7 @@ function showSettings(){
    const settingsBox = document.querySelector('#fileControls');
    if(settingsBox.classList.toString().includes('show_settings')){
       settingsBox.classList.remove('show_settings');
-      localStorage.setItem('compression_strength', quality);
+      localStorage.setItem('compression_targetSize', targetSizeKB);
       localStorage.setItem('compression_maxWidthHeight', maxWH);
       localStorage.setItem('compression_webpConversion', webpConversion);
       localStorage.setItem('compression_prefix', imagePrefix);
@@ -581,14 +553,14 @@ function showSettings(){
 }
 
 function setDefaultSettings(){
-   const compression_strength = localStorage.getItem('compression_strength');
+   const compression_targetSize = localStorage.getItem('compression_targetSize');
    const compression_maxWidthHeight = localStorage.getItem('compression_maxWidthHeight');
    const compression_WebpConversion = localStorage.getItem('compression_webpConversion');
    const compression_prefix = localStorage.getItem('compression_prefix');
-   if(compression_strength){ 
-      quality = parseFloat(compression_strength, 10)
-      document.querySelector('#setting_image_quality').value = quality * 100;
-      document.querySelector('.setting_image_quality__val').textContent = (quality * 100)+'%';
+   if(compression_targetSize){ 
+      targetSizeKB = parseInt(compression_targetSize, 10)
+      document.querySelector('#setting_target_size_kb').value = targetSizeKB;
+      document.querySelector('.setting_target_size_kb__val').textContent = targetSizeKB+' KB';
    }
    if(compression_maxWidthHeight){ 
       maxWH = parseInt(compression_maxWidthHeight, 10);
@@ -628,77 +600,13 @@ function recompress(){
    }
 }
 
-function compareImages(fileID){
-   const file = compressedFiles[fileID];
-   if(file && file.newImage){
-      const beforeImage = document.querySelector('.before_image');
-      const afterImage = document.querySelector('.after_image');
-      const compareElement = document.getElementById('compare');
-      const compareInnerElement = document.querySelector('.compare__inner');
-      
-      beforeImage.innerHTML = '<img src="'+file.image+'" />';
-      afterImage.innerHTML = '<img src="'+window.URL.createObjectURL(file.newImage)+'" />';
-      beforeImage.dataset.size="Before ("+readableFileSize(file.size, true)+")";
-      afterImage.dataset.size="After ("+readableFileSize(file.sizeAfter, true)+")";
-      
-      setTimeout(() => {
-         const afterImageElement = document.querySelector('.after_image img');
-         const natWidth = afterImageElement.naturalWidth;
-         const natHeight = afterImageElement.naturalHeight;
-         
-         if(natHeight > natWidth &&  natHeight > (window.innerHeight * 90/100)){
-            compareElement.classList.add('compare--portrait');
-         }
-         if(natWidth < 1200 && natHeight < (window.innerHeight * 90/100)){
-            compareElement.classList.add('compare--imageHeight');
-            compareInnerElement.style.width = natWidth+'px';
-         }
-         compareElement.classList.add('compare--show');
-      }, 100);
-
-   }
-}
-
-function closeCompare(){
-   document.querySelector('.uploadDropWrap').classList.remove('uploadDropWrap--popup');
-   document.getElementById('compare').classList.remove('compare--show', 'compare--portrait', 'compare--imageHeight');
-   document.querySelector('.compare__inner').style.width = null;
-   document.querySelector('.before_image').innerHTML = ''; document.querySelector('.before_image').dataset.size="Before (0 Kb)";
-   document.querySelector('.after_image').innerHTML = ''; document.querySelector('.after_image').dataset.size="After (0 Kb)";
-}
-
-function moveCompareSlider(){
-   document.querySelector('.before_image').style.width = document.getElementById("compare_slider").value+"%";
-}
-
-function woofyIdle(){
-   woofyIdleInterVal = setInterval(function() {
-      const eyes = document.querySelector('.woofy__eyes');
-      const eyes_closed = document.querySelector('.woofy__eyes_closed');
-      eyes.style.display ='none'; eyes_closed.style.display ='block';
-      setTimeout(() => { eyes.style.display ='block';  eyes_closed.style.display ='none';  }, 200);
-   }, 3600);
-
-   woofyEarsInterVal = setInterval(function() {
-      const ears_left = document.querySelector('.woofy__ears_left');
-      ears_left.style.backgroundPosition ='-326px -385px'; 
-      setTimeout(() => {   ears_left.style.backgroundPosition ='-550px -385px';   }, 3500);
-   }, 6200);
-   woofyEarsRInterVal = setInterval(function() {
-      const ears_right = document.querySelector('.woofy__ears_right');
-      ears_right.style.backgroundPosition ='-432px -385px';
-      setTimeout(() => {  ears_right.style.backgroundPosition ='-655px -385px';  }, 3500);
-   }, 9200);
-}
-
-async function encodeWebP(image)  {
+async function encodeWebP(image, quality)  {
    return new Promise((resolve, reject) => {
-      //console.log('Version:', webpEncoder.version().toString(16));
       const result = webpEncoder.encode(image.data, image.width, image.height, {
-         quality: (quality * 100),
+         quality: quality,
          target_size: 0,
          target_PSNR: 0,
-         method: 4,
+         method: 2,
          sns_strength: 50,
          filter_strength: 60,
          filter_sharpness: 0,
@@ -732,7 +640,7 @@ async function encodeWebP(image)  {
    });
 };
 
-async function ConvertToWebP(imageData){
+async function ConvertToWebP(imageData, quality){
       const img = document.createElement('img');
       img.src = imageData; let imgLoadedSize = {}; 
       await new Promise(resolve => img.onload = function(){
@@ -745,7 +653,6 @@ async function ConvertToWebP(imageData){
       let imgWidth = img.width || img.naturalWidth;
       let imgHeight = img.height || img.naturalHeight;
       canvas.width = imgWidth; canvas.height = imgHeight; 
-      //console.log(imgWidth, imgHeight);
 
       if(maxWH){
          if (imgWidth > imgHeight) {
@@ -759,11 +666,10 @@ async function ConvertToWebP(imageData){
          }
       }
 
-      //[canvas.width, canvas.height] = [img.width, img.height];
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, img.width, img.height);
       const webPCompImage = ctx.getImageData(0, 0, img.width, img.height);
-      return encodeWebP(webPCompImage);
+      return encodeWebP(webPCompImage, quality);
 }
 
 function completeCompression(newFile, compressedIMGBlob){
@@ -772,7 +678,6 @@ function completeCompression(newFile, compressedIMGBlob){
       if(!compressedFiles[UID]){
          const updatedFile = {...newFile, newImage: compressedIMGBlob, sizeAfter: parseFloat(compressedIMGBlob.size.toFixed(1)), converted: true};
          compressedFiles[UID] = (updatedFile);
-         //console.log(updatedFiles);
          reRenderFile(updatedFile);
          updateStatus();
       }
