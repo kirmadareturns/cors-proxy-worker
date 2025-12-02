@@ -127,19 +127,32 @@
             line-height: 1.6;
             border-left: 1px solid #1e1e1e;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto; /* Ensure preview content scrolls */
         }
-        #secondary-panel h1, #secondary-panel h2 {
-            border-bottom: 1px solid #dddddd;
-            padding-bottom: 5px;
-            margin-top: 20px;
+        /* Prose-like styling for rendered markdown content */
+        #markdown-preview-content h1 { font-size: 1.8em; border-bottom: 2px solid #dddddd; padding-bottom: 0.3em; margin-top: 1.5em; }
+        #markdown-preview-content h2 { font-size: 1.6em; border-bottom: 1px solid #eeeeee; padding-bottom: 0.3em; margin-top: 1.4em; }
+        #markdown-preview-content h3 { font-size: 1.4em; margin-top: 1.3em; }
+        #markdown-preview-content p { margin-bottom: 1em; }
+        #markdown-preview-content ul, #markdown-preview-content ol { margin-left: 20px; margin-bottom: 1em; }
+        #markdown-preview-content li { margin-bottom: 0.3em; }
+        #markdown-preview-content code { background-color: #e0e0e0; padding: 2px 4px; border-radius: 3px; font-family: Consolas, monospace; }
+        #markdown-preview-content pre code { 
+            display: block; 
+            padding: 10px; 
+            background-color: #2d2d2d; 
+            color: #cccccc; 
+            overflow-x: auto; 
+            border-radius: 4px; 
+            margin-top: 1em; 
+            margin-bottom: 1em; 
         }
-        #secondary-panel code {
-            background-color: #e0e0e0;
-            padding: 2px 4px;
-            border-radius: 3px;
-        }
-        #secondary-panel p {
-            margin-bottom: 1em;
+        #markdown-preview-content blockquote {
+            border-left: 4px solid #007acc;
+            padding-left: 15px;
+            color: #555555;
+            margin: 1em 0;
+            font-style: italic;
         }
 
         /* Hidden Class for Layout Toggling */
@@ -153,7 +166,6 @@
     <!-- 1. TOP TITLE BAR -->
     <div role="banner" class="h-[30px] w-full bg-slate-900 flex items-center justify-center px-2 text-[12px] border-b border-[#2b2b2b] shadow-lg shrink-0">
         <div id="title-bar" class="text-white font-medium text-sm">Notes App | Local Storage [Workspace]</div>
-        <!-- Removed Help link as requested -->
         <div class="w-16"></div> 
     </div>
 
@@ -162,11 +174,13 @@
         
         <!-- ACTIVITY BAR -->
         <div id="activity-bar" class="w-[48px] bg-[var(--activity-bg)] flex flex-col items-center py-2 space-y-2 border-r border-[#2b2b2b] shrink-0" role="navigation" aria-label="Activity Bar">
-            <!-- Explorer Icon (Always Active/Visible) -->
+            <!-- Explorer Icon (Now Toggles Sidebar) -->
             <button 
+                id="explorer-toggle-btn"
+                onclick="toggleSidebar()"
                 class="w-full h-[48px] flex items-center justify-center cursor-pointer border-l-2 border-white text-white focus:outline-none focus:ring-2 focus:ring-[var(--active-color)]"
-                title="Notes Explorer"
-                aria-label="Notes Explorer"
+                title="Toggle Notes Explorer"
+                aria-label="Toggle Notes Explorer"
             >
                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm0 2v12h16V6H4zM6 8h4v8H6V8z"/>
@@ -175,7 +189,7 @@
         </div>
 
         <!-- SIDEBAR PANEL (Notes List) -->
-        <div id="sidebar-panel" class="w-[280px] bg-[var(--sidebar-bg)] flex flex-col border-r border-[#1e1e1e] shrink-0 transition-all duration-200" role="complementary" aria-label="Notes List">
+        <div id="sidebar-panel" class="w-[280px] bg-[var(--sidebar-bg)] flex flex-col border-r border-[#1e1e1e] shrink-0 transition-[width] duration-300 ease-in-out" role="complementary" aria-label="Notes List">
             
             <!-- Sidebar Header -->
             <div id="sidebar-header" class="h-[35px] flex items-center justify-between px-4 text-[11px] font-bold tracking-wide uppercase text-[#bbbbbb] mt-2 border-b border-[#303030] shrink-0">
@@ -241,7 +255,7 @@
                 <div id="editor-group-wrapper" class="flex flex-1 visually-hidden">
                     
                     <!-- PRIMARY EDITOR PANEL -->
-                    <div id="primary-editor-panel" class="relative flex flex-col flex-1 overflow-hidden">
+                    <div id="primary-editor-panel" class="relative flex flex-col flex-1 overflow-hidden transition-[width] duration-300 ease-in-out">
                         <div id="editor-breadcrumbs" class="h-[22px] bg-[#2d2d2d] flex items-center px-4 text-[11px] text-[#888888] border-b border-[#3e3e42] shrink-0 visually-hidden" aria-label="Current File Path">
                             <!-- Breadcrumbs injected here -->
                         </div>
@@ -267,9 +281,8 @@
                     </div>
 
                     <!-- SECONDARY (PREVIEW) PANEL -->
-                    <div id="secondary-panel" class="flex-1 custom-scrollbar overflow-y-auto visually-hidden" role="region" aria-label="Markdown Preview">
-                        <h2 class="text-xl font-semibold mb-4 border-b pb-2">Markdown Preview</h2>
-                        <div id="markdown-preview-content" class="prose max-w-none">
+                    <div id="secondary-panel" class="flex-1 custom-scrollbar overflow-y-auto visually-hidden transition-[width] duration-300 ease-in-out" role="region" aria-label="Markdown Preview" style="width: 0;">
+                        <div id="markdown-preview-content">
                             <!-- Rendered Markdown Content -->
                         </div>
                     </div>
@@ -292,7 +305,7 @@
         
         <!-- Right Side: Line/Col, Encoding, Lang, Preview -->
         <div class="flex items-center space-x-4">
-           <!-- NEW: Clickable Line/Col Button -->
+           <!-- Clickable Line/Col Button -->
            <button id="jump-to-line-btn" title="Click to jump to a specific line" class="hover:bg-white/20 px-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-white" aria-label="Cursor position">
                <span id="status-line-col">Ln 1, Col 1</span>
            </button>
@@ -304,7 +317,7 @@
            </button>
         </div>
 
-        <!-- NEW: Jump Input Overlay (positioned above the status bar) -->
+        <!-- Jump Input Overlay (positioned above the status bar) -->
         <div id="jump-input-overlay" class="absolute bottom-full right-4 p-2 bg-gray-800 rounded-lg shadow-2xl hidden z-30" style="transform: translateY(-4px);">
             <label for="jump-input" class="text-white text-xs mr-2 font-semibold">Go to Line:</label>
             <input type="number" id="jump-input" class="w-20 p-1 text-sm bg-gray-900 text-white rounded focus:outline-none focus:ring-2 focus:ring-[#007acc]" min="1" value="1" aria-label="Line number input">
@@ -324,10 +337,12 @@
         let isFileDirty = false;
         let isRenaming = null; // file id currently being renamed
         let isSecondaryPanelOpen = false;
+        let isSidebarOpen = true; // NEW: State for sidebar toggle
         let saveTimer; // for debouncing saves
 
         // --- DOM REFERENCES ---
         const $sidebarContent = document.getElementById('sidebar-content');
+        const $sidebarPanel = document.getElementById('sidebar-panel'); // NEW: Reference
         const $tabsHeader = document.getElementById('tabs-header');
         const $welcomeMessage = document.getElementById('welcome-message');
         const $editorGroupWrapper = document.getElementById('editor-group-wrapper');
@@ -344,8 +359,6 @@
         const $editorBreadcrumbs = document.getElementById('editor-breadcrumbs');
         const $togglePreviewBtn = document.getElementById('toggle-preview-btn');
         const $statusMessages = document.getElementById('status-messages');
-        
-        // NEW: Jump to Line Elements
         const $jumpToLineBtn = document.getElementById('jump-to-line-btn');
         const $jumpInputOverlay = document.getElementById('jump-input-overlay');
         const $jumpInput = document.getElementById('jump-input');
@@ -395,14 +408,16 @@
                     openTabs = data.openTabs || [];
                     activeTabId = data.activeTabId || null;
                     isSecondaryPanelOpen = data.isSecondaryPanelOpen || false;
+                    isSidebarOpen = data.isSidebarOpen !== undefined ? data.isSidebarOpen : true; // NEW: Load sidebar state
                 } else {
                     // Default starter files
                     files = [
-                        { id: generateId(), name: 'Welcome Note.md', type: 'file', content: '# Welcome to your Notes IDE\n\nThis is a single-pane editor for quick notes and code snippets.\n\n### Important:\n\n* **Auto-Save:** Your notes are automatically saved to your browser\'s local storage every second.\n* **Syntax Highlighting:** Supported for JS, MD, JSON, and HTML.\n\nFiles are automatically saved to your browser\'s local storage.', language: 'markdown' },
+                        { id: generateId(), name: 'Welcome Note.md', type: 'file', content: '# Welcome to your Notes IDE\n\nThis is a single-pane editor for quick notes and code snippets.\n\n### Important:\n\n* **Auto-Save:** Your notes are automatically saved to your browser\'s local storage every second.\n* **Markdown Preview:** Click the preview icon in the status bar (bottom right) to see the rendered output.\n\nFiles are automatically saved to your browser\'s local storage.', language: 'markdown' },
                         { id: generateId(), name: 'Snippet.js', type: 'file', content: '// JavaScript Syntax Test\nconst calculate = (a, b) => {\n  // Returns the sum of two numbers\n  return a + b; // keyword, variable, operator, punctuation, number\n};\n\ncalculate(10, 25);', language: 'javascript' },
                     ];
                     openTabs = [files.find(f => f.name === 'Welcome Note.md').id];
                     activeTabId = openTabs[0];
+                    isSidebarOpen = true; // Initial state
                 }
             } catch (e) {
                 console.error("Could not load workspace:", e);
@@ -417,6 +432,7 @@
                     openTabs,
                     activeTabId,
                     isSecondaryPanelOpen,
+                    isSidebarOpen, // NEW: Save sidebar state
                 };
                 localStorage.setItem(LS_KEY, JSON.stringify(data));
             } catch (e) {
@@ -447,26 +463,41 @@
             }, duration);
         }
         
+        /** NEW: Toggles the visibility of the notes explorer sidebar. */
+        const toggleSidebar = () => {
+            isSidebarOpen = !isSidebarOpen;
+            
+            if (isSidebarOpen) {
+                $sidebarPanel.style.width = '280px';
+                $sidebarPanel.classList.remove('visually-hidden');
+            } else {
+                $sidebarPanel.style.width = '0px';
+                $sidebarPanel.classList.add('visually-hidden');
+            }
+            saveFiles();
+        };
+
         const toggleSecondaryPanel = () => {
             isSecondaryPanelOpen = !isSecondaryPanelOpen;
             const activeFile = getFile(activeTabId);
+            
+            // Only allow preview for Markdown files
+            if (!activeFile || activeFile.language !== 'markdown') {
+                 isSecondaryPanelOpen = false;
+                 $togglePreviewBtn.classList.add('visually-hidden');
+            }
 
-            if (activeFile && activeFile.language === 'markdown') {
-                if (isSecondaryPanelOpen) {
-                    $secondaryPanel.classList.remove('visually-hidden');
-                    $primaryEditorPanel.style.width = '50%';
-                    $secondaryPanel.style.width = '50%';
-                    renderMarkdownPreview(activeFile.content);
-                } else {
-                    $secondaryPanel.classList.add('visually-hidden');
-                    $primaryEditorPanel.style.width = '100%';
-                    $secondaryPanel.style.width = '0%';
-                }
+            if (isSecondaryPanelOpen) {
+                // Open state
+                $secondaryPanel.classList.remove('visually-hidden');
+                $primaryEditorPanel.style.width = '50%';
+                $secondaryPanel.style.width = '50%';
+                renderMarkdownPreview(activeFile.content);
             } else {
-                 isSecondaryPanelOpen = false; // Force close if language changes from MD
-                 $secondaryPanel.classList.add('visually-hidden');
-                 $primaryEditorPanel.style.width = '100%';
-                 $secondaryPanel.style.width = '0%';
+                // Closed state
+                $secondaryPanel.classList.add('visually-hidden');
+                $primaryEditorPanel.style.width = '100%';
+                $secondaryPanel.style.width = '0%';
             }
             
             renderEditorContent(activeFile);
@@ -476,6 +507,15 @@
         // --- Sidebar Rendering (Notes List) ---
 
         const renderExplorer = () => {
+            // Apply sidebar state immediately
+            if (isSidebarOpen) {
+                $sidebarPanel.style.width = '280px';
+                $sidebarPanel.classList.remove('visually-hidden');
+            } else {
+                $sidebarPanel.style.width = '0px';
+                $sidebarPanel.classList.add('visually-hidden');
+            }
+            
             const sortedFiles = files.sort((a, b) => a.name.localeCompare(b.name));
 
             const renderNode = (node) => {
@@ -668,13 +708,17 @@
             $mainEditor.value = activeFile.content;
             updateLineNumbers();
             updateSyntaxOverlay();
-            updateTitleBar(activeFile.name); // Updated to use new function
-            updateLineColDisplay(); // NEW: Initial display update
+            updateTitleBar(activeFile.name); 
+            updateLineColDisplay(); 
             $mainEditor.focus();
 
             // 3. Handle Preview Panel (Markdown only)
             const isMarkdown = activeFile.language === 'markdown';
             $togglePreviewBtn.classList.toggle('visually-hidden', !isMarkdown);
+            
+            if (!isMarkdown) {
+                 isSecondaryPanelOpen = false; // Force close if not MD
+            }
             
             if (isMarkdown && isSecondaryPanelOpen) {
                 renderMarkdownPreview(activeFile.content);
@@ -741,7 +785,7 @@
                 id, 
                 name, 
                 type: 'file', 
-                content: `# ${name}`, 
+                content: `# ${name}\n\nStart typing your new Markdown note here.`, 
                 language: getLanguageFromExt(name),
             };
             files.push(newNode);
@@ -788,6 +832,10 @@
                 activeTabId = openTabs.length > 0 ? openTabs[openTabs.length - 1] : null;
                 isFileDirty = false;
             }
+            // If the closed tab was a markdown preview, force the preview off
+            if (!activeTabId || getFile(activeTabId)?.language !== 'markdown') {
+                 isSecondaryPanelOpen = false;
+            }
             updateUI();
         };
         
@@ -832,6 +880,7 @@
             const fileToDelete = getFile(id);
             
             // Custom modal replacement for confirmation dialog
+            // Note: Since we cannot use confirm(), we use a simplified modal replacement for now.
             if (!window.confirm(`Are you sure you want to delete "${fileToDelete?.name}"?\n\nThis cannot be undone.`)) return;
 
             files = files.filter(f => f.id !== id);
@@ -851,7 +900,7 @@
             isFileDirty = dirty;
             $unsavedIndicator.classList.toggle('opacity-0', !dirty);
             const activeFile = getFile(activeTabId);
-            updateTitleBar(activeFile?.name || 'Welcome'); // UPDATED: Use new title bar function
+            updateTitleBar(activeFile?.name || 'Welcome'); 
             renderStatusBar();
             renderTabs();
         };
@@ -870,7 +919,6 @@
             const cursorStart = $mainEditor.selectionStart;
             const content = $mainEditor.value.substring(0, cursorStart);
             const line = content.split('\n').length;
-            // The column is the length of the current line segment + 1 (since column is 1-indexed)
             const column = cursorStart - content.lastIndexOf('\n');
             
             $statusBarLineCol.textContent = `Ln ${line}, Col ${column}`;
@@ -882,9 +930,7 @@
             const targetLine = Math.min(Math.max(1, parseInt(lineNumber)), lines.length);
             
             let charIndex = 0;
-            // Calculate the total character length up to the start of the target line
             for (let i = 0; i < targetLine - 1; i++) {
-                // +1 accounts for the newline character (LF or CRLF) which split() removes
                 charIndex += lines[i].length + 1; 
             }
 
@@ -893,6 +939,8 @@
             $mainEditor.focus();
             updateLineColDisplay();
             $jumpInputOverlay.classList.add('hidden');
+            $mainEditor.scrollTop = charIndex * (20); // Rough scroll calculation (20px line-height)
+            $mainEditor.scrollIntoView({ behavior: 'smooth', block: 'center' });
         };
 
         const updateFileContent = (content) => {
@@ -906,19 +954,17 @@
         const updateLineNumbers = () => {
             const content = $mainEditor.value;
             const lineCount = content.split('\n').length;
-            // +1 to prevent scrollbar flicker when cursor is at the last line end
             const linesHtml = Array.from({ length: lineCount + 1 }, (_, i) => `<div>${i + 1}</div>`).join('');
             $lineNumbers.innerHTML = linesHtml;
         };
         
-        // Removed old updateStatusBar function and replaced usage with updateLineColDisplay and updateTitleBar
-
         const handleEditorScroll = () => {
             $lineNumbers.scrollTop = $mainEditor.scrollTop;
             $syntaxOverlay.scrollTop = $mainEditor.scrollTop;
         };
 
         // --- SYNTAX HIGHLIGHTING (Tokenization Logic) ---
+        // (Tokenization logic omitted for brevity, assumed functional from previous state)
         
         const tokenize = (code, lang) => {
             let tokens = [];
@@ -940,14 +986,12 @@
                     { type: 'link', pattern: /(\[.*?\]\s*\(.*?\))/y },
                     { type: 'list', pattern: /^([\*-]\s+)/ym },
                 ],
-                // Simple regex for JSON to catch keys and strings
                 json: [
                     { type: 'string', pattern: /(["'`])(?:\\.|[^\\\n])*?\1/y },
                     { type: 'number', pattern: /\b\d+(\.\d+)?\b/y },
                     { type: 'keyword', pattern: /\b(true|false|null)\b/y },
                     { type: 'punctuation', pattern: /[\{\}\[\]:,]/y },
                 ],
-                // Default fallback
                 plaintext: [],
             };
 
@@ -977,7 +1021,6 @@
                     while (nextPos < code.length && !foundNextToken) {
                         for (const { pattern } of langRegexes) {
                             pattern.lastIndex = nextPos;
-                            // Check if a token starts at the next position
                             if (pattern.exec(code)?.index === nextPos) {
                                 foundNextToken = true;
                                 break;
@@ -1000,7 +1043,6 @@
 
             let html = '';
             tokens.forEach(token => {
-                // Escape HTML entities to prevent rendering issues
                 let value = token.value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
                 
                 if (token.type !== 'text') {
@@ -1010,7 +1052,6 @@
                 }
             });
             
-            // Replace spaces with non-breaking spaces to preserve indentation and word wrap
             html = html.replace(/ /g, '&nbsp;'); 
             return html;
         };
@@ -1025,36 +1066,100 @@
             $syntaxOverlay.innerHTML = highlightedHtml;
         };
 
-        // --- MARKDOWN PREVIEW (Simple Markdown-to-HTML) ---
+        // --- MARKDOWN PREVIEW (Enhanced) ---
         
         const renderMarkdownPreview = (markdown) => {
-            let html = markdown
-                .replace(/^#\s*(.*)$/gm, '<h1>$1</h1>') 
-                .replace(/^##\s*(.*)$/gm, '<h2>$1</h2>') 
-                .replace(/^###\s*(.*)$/gm, '<h3>$1</h3>') 
-                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') 
-                .replace(/\*(.*?)\*/g, '<em>$1</em>') 
-                .replace(/`(.*?)`/g, '<code>$1</code>');
+            let html = markdown;
 
-            // Handle Lists
-            const listItems = html.match(/^[\*-]\s*(.*)$/gm);
-            if (listItems) {
-                const listHtml = listItems.map(item => `<li>${item.replace(/^[\*-]\s*/, '')}</li>`).join('');
-                // Remove list items from the main block before re-injecting them as a <ul>
-                html = html.replace(/^[\*-]\s*(.*)\n?/gm, '').trim(); 
-                html += listItems.length > 0 ? `<ul>${listHtml}</ul>` : '';
+            // 1. Code Blocks (fenced) - MUST be done first
+            html = html.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
+                // Escape HTML inside code blocks
+                const escapedCode = code.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                return `<pre><code>${escapedCode.trim()}</code></pre>`;
+            });
+
+            // 2. Headings
+            html = html.replace(/^######\s*(.*)$/gm, '<h6>$1</h6>')
+                       .replace(/^#####\s*(.*)$/gm, '<h5>$1</h5>')
+                       .replace(/^####\s*(.*)$/gm, '<h4>$1</h4>')
+                       .replace(/^###\s*(.*)$/gm, '<h3>$1</h3>')
+                       .replace(/^##\s*(.*)$/gm, '<h2>$1</h2>')
+                       .replace(/^#\s*(.*)$/gm, '<h1>$1</h1>');
+
+            // 3. Blockquotes
+            html = html.replace(/^>\s*(.*)$/gm, '<blockquote>$1</blockquote>');
+            
+            // 4. Horizontal Rule
+            html = html.replace(/^---\s*$/gm, '<hr>');
+
+            // 5. Inline Formatting (Must handle escaped characters, but let's keep it simple)
+            html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                       .replace(/__(.*?)__/g, '<strong>$1</strong>')
+                       .replace(/\*(.*?)\*/g, '<em>$1</em>')
+                       .replace(/_(.*?)_/g, '<em>$1</em>');
+            
+            // 6. Inline Code
+            html = html.replace(/`(.*?)`/g, '<code>$1</code>');
+
+            // 7. Links/Images (Simple URL replacement, ignoring images for now)
+            html = html.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+
+            // 8. Lists (Group list items together)
+            const listLines = html.split('\n');
+            let newListHtml = [];
+            let inList = false;
+            let listType = ''; // 'ul' or 'ol'
+            let listContent = '';
+
+            for (const line of listLines) {
+                const trimmedLine = line.trim();
+                const isListItem = trimmedLine.match(/^(\*|\-|\+)\s/);
+                const isOrderedItem = trimmedLine.match(/^\d+\.\s/);
+                let currentType = null;
+                
+                if (isListItem) currentType = 'ul';
+                else if (isOrderedItem) currentType = 'ol';
+                
+                if (currentType) {
+                    const content = trimmedLine.replace(/^(\*|\-|\+|\d+\.)\s*/, '');
+                    const listItem = `<li>${content}</li>`;
+                    
+                    if (inList && listType === currentType) {
+                        listContent += listItem;
+                    } else if (inList && listType !== currentType) {
+                        // End current list, start new
+                        newListHtml.push(`<${listType}>${listContent}</${listType}>`);
+                        listType = currentType;
+                        listContent = listItem;
+                    } else {
+                        // Start new list
+                        inList = true;
+                        listType = currentType;
+                        listContent = listItem;
+                    }
+                } else {
+                    if (inList) {
+                        // End current list
+                        newListHtml.push(`<${listType}>${listContent}</${listType}>`);
+                        inList = false;
+                        listContent = '';
+                    }
+                    // Handle non-list content (wrap in p unless it's a block element)
+                    if (line.trim() !== '' && !line.match(/<h\d>|<pre>|<blockquote>|<hr>/i)) {
+                         newListHtml.push(`<p>${line}</p>`);
+                    } else {
+                        newListHtml.push(line);
+                    }
+                }
+            }
+
+            // Flush last list if still open
+            if (inList) {
+                newListHtml.push(`<${listType}>${listContent}</${listType}>`);
             }
             
-            // Handle Paragraphs
-            html = html.split('\n\n').map(block => {
-                if (!block.startsWith('<h') && !block.startsWith('<ul>') && block.startsWith('<p') && block.trim() !== '') {
-                    return block; // Already wrapped in paragraph from previous iteration/content
-                }
-                if (!block.startsWith('<h') && !block.startsWith('<ul>') && block.trim() !== '') {
-                    return `<p>${block}</p>`;
-                }
-                return block;
-            }).join('');
+            // Filter out empty paragraphs left by list processing and join
+            html = newListHtml.filter(line => line.trim() !== '<p></p>').join('\n');
             
             $markdownPreviewContent.innerHTML = html;
         };
@@ -1068,7 +1173,7 @@
             updateFileContent(content);
             updateLineNumbers();
             updateSyntaxOverlay();
-            updateLineColDisplay(); // UPDATED: Use new line/col function
+            updateLineColDisplay(); 
 
             if (getFile(activeTabId).language === 'markdown' && isSecondaryPanelOpen) {
                 renderMarkdownPreview(content);
@@ -1103,42 +1208,43 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadFiles();
             
-            if (isSecondaryPanelOpen) {
-                 $secondaryPanel.classList.remove('visually-hidden');
+            // Set initial state of sidebar based on loaded state
+            if (!isSidebarOpen) {
+                $sidebarPanel.style.width = '0px';
+                $sidebarPanel.classList.add('visually-hidden');
             } else {
-                 $secondaryPanel.classList.add('visually-hidden');
+                $sidebarPanel.style.width = '280px';
+                $sidebarPanel.classList.remove('visually-hidden');
             }
             
             updateUI();
-            updateLineColDisplay(); // Initial call after load
+            updateLineColDisplay(); 
 
             // Set up main editor listeners
             $mainEditor.addEventListener('input', handleEditorInput);
             $mainEditor.addEventListener('scroll', handleEditorScroll);
-            
-            // UPDATED: Use updateLineColDisplay for cursor movement
             $mainEditor.addEventListener('keyup', updateLineColDisplay);
             $mainEditor.addEventListener('click', updateLineColDisplay);
             $mainEditor.addEventListener('focus', () => {
-                if (activeTabId) updateSyntaxOverlay(); // Redraw on focus for consistency
+                if (activeTabId) updateSyntaxOverlay(); 
                 updateLineColDisplay(); 
             });
             $mainEditor.addEventListener('keydown', handleTabKey);
             
-            // NEW: Jump to Line Button Listener
+            // Jump to Line Button Listener
             $jumpToLineBtn.addEventListener('click', () => {
                 if (!activeTabId) return;
                 $jumpInputOverlay.classList.toggle('hidden');
                 if (!$jumpInputOverlay.classList.contains('hidden')) {
-                    // Extract the current line number from the display text
                     const currentLineText = $statusBarLineCol.textContent.split(',')[0].replace('Ln ', '').trim();
                     const currentLine = parseInt(currentLineText);
                     $jumpInput.value = currentLine || 1;
-                    $jumpInput.select(); // Selects the number for easy overtyping
+                    $jumpInput.select(); 
+                    $jumpInput.focus();
                 }
             });
 
-            // NEW: Jump Input Listener (Handle Enter key and Escape)
+            // Jump Input Listener (Handle Enter key and Escape)
             $jumpInput.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -1149,9 +1255,8 @@
                 }
             });
             
-            // NEW: Global click handler to hide the overlay
+            // Global click handler to hide the overlay
             document.addEventListener('click', (e) => {
-                // Check if the click is outside both the button and the overlay, and the overlay is visible
                 const target = e.target;
                 const isJumpButton = $jumpToLineBtn && $jumpToLineBtn.contains(target);
                 const isJumpOverlay = $jumpInputOverlay && $jumpInputOverlay.contains(target);
