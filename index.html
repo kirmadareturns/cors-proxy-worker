@@ -1274,30 +1274,21 @@
                 }
             });
         });
-        /* -----  EXTRA KEYBOARD SHORTCUTS  ----- */
+/* -----  EXTRA KEYBOARD SHORTCUTS  (Ctrl+Shift)  ----- */
 document.addEventListener('keydown', e => {
-  if (!activeTabId) return;          // no file open = do nothing
+  if (!activeTabId) return;
+  const ok = (e.ctrlKey || e.metaKey) && e.shiftKey;   // Ctrl+Shift  (or ⌘+Shift on Mac)
 
-  const ctrlOrCmd = e.ctrlKey || e.metaKey;
-
-  /* 1  Ctrl + N  –  new note  */
-  if (ctrlOrCmd && e.key === 'n') {
+  if (ok && e.key === 'N') {          // Ctrl+Shift+N  –  new note
     e.preventDefault();
     createFile();
-  }
-  /* 2  Ctrl + S  –  instant ZIP backup  */
-  else if (ctrlOrCmd && e.key === 's') {
+  } else if (ok && e.key === 'S') {   // Ctrl+Shift+S  –  instant ZIP
     e.preventDefault();
-    downloadAllFiles();        // already shows “Saved X notes” message
-  
-  }
-  /* 3  Ctrl + W  –  close current tab  */
-  else if (ctrlOrCmd && e.key === 'w') {
+    downloadAllFiles();
+  } else if (ok && e.key === 'W') {   // Ctrl+Shift+W  –  close current tab
     e.preventDefault();
     closeTab(activeTabId);
-  }
-  /* 4  Ctrl + P  –  toggle Markdown preview (only if file is .md)  */
-  else if (ctrlOrCmd && e.key === 'p') {
+  } else if (ok && e.key === 'P') {   // Ctrl+Shift+P  –  toggle preview
     e.preventDefault();
     const f = getFile(activeTabId);
     if (f && f.language === 'markdown') toggleSecondaryPanel();
