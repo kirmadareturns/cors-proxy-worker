@@ -93,7 +93,7 @@
             tab-size: 2;
         }
 
-        .editor-textarea,
+.editor-textarea,
 .editor-overlay {
   position: absolute;
   inset: 0;
@@ -101,19 +101,16 @@
   height: 100%;
   padding: 0;
   margin: 0;
-  white-space: pre-wrap;        /* keep line breaks */
-  word-wrap: break-word;        /* old syntax */
-  overflow-wrap: anywhere;      /* new syntax – allows break *anywhere* if needed */
-  word-break: break-word;       /* safari fallback */
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
   border: none;
   outline: none;
   box-sizing: border-box;
   line-height: inherit;
   tab-size: inherit;
-  /* ADDED – stop horizontal scroll-bar appearing when preview opens */
-  overflow-x: hidden;
+  overflow-x: hidden;   /* <--  kills horizontal scrollbar  */
 }
-
         .editor-textarea {
             background-color: transparent;
             color: var(--text-color);
@@ -996,17 +993,13 @@
         };
 
 const updateLineNumbers = () => {
-  /* 1. let the browser wrap naturally first */
-  const ta = $mainEditor;
-  const lineHeight = parseInt(getComputedStyle(ta).lineHeight);
-  const h = ta.scrollHeight;          // total height including wrapped lines
-  const visualLines = Math.ceil(h / lineHeight);
+  const ta   = $mainEditor;
+  const lh   = parseInt(getComputedStyle(ta).lineHeight);
+  const visLines = Math.ceil(ta.scrollHeight / lh);
 
-  /* 2. build gutter */
-  const html = Array.from({ length: visualLines }, (_, i) => `<div>${i + 1}</div>`).join('');
-  $lineNumbers.innerHTML = html;
+  $lineNumbers.innerHTML =
+    Array.from({length: visLines}, (_,i)=>`<div>${i+1}</div>`).join('');
 
-  /* 3. keep scroll positions locked together */
   $lineNumbers.scrollTop = ta.scrollTop;
 };
         
