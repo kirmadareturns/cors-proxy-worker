@@ -72,6 +72,8 @@
             margin: 0;
             white-space: pre-wrap;
             word-wrap: break-word;
+            word-break: break-word;
+            overflow-wrap: break-word;
             border: none;
             outline: none;
             box-sizing: border-box;
@@ -1275,21 +1277,21 @@
                 }
             });
         });
-/* -----  EXTRA KEYBOARD SHORTCUTS  (Ctrl+Shift)  ----- */
+/* -----  EXTRA KEYBOARD SHORTCUTS  (Ctrl+Alt)  ----- */
 document.addEventListener('keydown', e => {
   if (!activeTabId) return;
-  const ok = (e.ctrlKey || e.metaKey) && e.shiftKey;   // Ctrl+Shift  (or ⌘+Shift on Mac)
+  const ok = (e.ctrlKey || e.metaKey) && e.altKey;   // Ctrl+Alt  (or ⌘+Alt on Mac)
 
-  if (ok && e.key === 'N') {          // Ctrl+Shift+N  –  new note
+  if (ok && e.key === 'n') {          // Ctrl+Alt+N  –  new note
     e.preventDefault();
     createFile();
-  } else if (ok && e.key === 'S') {   // Ctrl+Shift+S  –  instant ZIP
+  } else if (ok && e.key === 's') {   // Ctrl+Alt+S  –  instant ZIP
     e.preventDefault();
     downloadAllFiles();
-  } else if (ok && e.key === 'W') {   // Ctrl+Shift+W  –  close current tab
+  } else if (ok && e.key === 'w') {   // Ctrl+Alt+W  –  close current tab
     e.preventDefault();
     closeTab(activeTabId);
-  } else if (ok && e.key === 'P') {   // Ctrl+Shift+P  –  toggle preview
+  } else if (ok && e.key === 'p') {   // Ctrl+Alt+P  –  toggle preview
     e.preventDefault();
     const f = getFile(activeTabId);
     if (f && f.language === 'markdown') toggleSecondaryPanel();
