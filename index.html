@@ -39,165 +39,151 @@
     <!-- Load JSZip Library for file compression/download -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
-        /*  keep textarea inside the pixel box that is really left  */
-#primary-editor-panel {
-  min-width: 0;        /*  allow flex-child to shrink below content size  */
+/* ----------  RESET / BASE  ---------- */
+*, *::before, *::after { box-sizing: border-box; }
+html, body {
+    height: 100%;
+    margin: 0;
+    overflow: hidden;          /* no browser-level scrolling */
+    font-family: 'Inter', sans-serif;
+    background: #1e1e1e;
+    color: #ccc;
 }
-        /* VS Code Dark Theme Colors */
-        :root {
-            --editor-bg: #1e1e1e;
-            --sidebar-bg: #252526;
-            --activity-bg: #333333;
-            --status-bg: #007acc;
-            --text-color: #cccccc;
-            --active-color: #007acc;
-            --selection-bg: #264f78;
-        }
 
-        /* Base Styles */
-        body, html {
-            height: 100%;
-            margin: 0;
-            overflow: hidden;
-            font-family: 'Inter', sans-serif;
-            background-color: var(--editor-bg);
-            color: var(--text-color);
-        }
-
-        /* Mono Font for Editor/Code */
-        .mono-font {
-            font-family: Consolas, 'Courier New', monospace;
-            font-size: 14px;
-            line-height: 20px; 
-        }
-
-        /* Custom Scrollbar (VS Code style) */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background-color: rgba(90, 90, 90, 0.7);
-            border-radius: 5px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background-color: transparent;
-        }
-
-        /* Editor Area Setup: Ensures perfect alignment for highlighting */
-        .editor-container {
-            position: absolute;
-            top: 0;
-            bottom: 0;
-            right: 0;
-            left: 58px; /* 48px (line number width) + 10px (line number right padding) */
-            padding: 4px 10px 4px 10px; /* Add internal padding for text area */
-            box-sizing: border-box;
-            line-height: 20px;
-            tab-size: 2;
-        }
-
-.editor-textarea,
-.editor-overlay {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  padding: 0;
-  margin: 0;
-  white-space: pre-wrap;
-  overflow-wrap: anywhere;
-  word-break: break-word;
-  border: none;
-  outline: none;
-  box-sizing: border-box;
-  line-height: inherit;
-  tab-size: inherit;
-  overflow-x: hidden;   /* <--  kills horizontal scrollbar  */
+/* ----------  THEME VARS  ---------- */
+:root {
+    --editor-bg: #1e1e1e;
+    --sidebar-bg: #252526;
+    --activity-bg: #333333;
+    --status-bg: #007acc;
+    --text-color: #cccccc;
+    --active-color: #007acc;
 }
-.editor-textarea {
-    background-color: transparent;
-    color: var(--text-color);
+
+/* ----------  GLOBAL HELPERS  ---------- */
+.mono-font {
+    font-family: Consolas, 'Courier New', monospace;
+    font-size: 14px;
+    line-height: 20px;
+    tab-size: 2;
+}
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(90, 90, 90, .7);
+    border-radius: 3px;
+}
+.visually-hidden { display: none !important; }
+
+/* ----------  LAYOUT SHELL (FLEX)  ---------- */
+body { display: flex; flex-direction: column; }
+#activity-bar { flex: 0 0 48px; }
+#sidebar-panel { flex: 0 0 280px; transition: flex-basis .3s; }
+#editor-area { flex: 1 1 0; min-width: 0; }   /* min-width:0 allows shrinking */
+#primary-editor-panel, #secondary-panel { min-width: 0; overflow: hidden; }
+
+/* ----------  EDITOR TEXT & OVERLAY  ---------- */
+.editor-container { position: relative; height: 100%; }
+.editor-textarea, .editor-overlay {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 4px 10px;
+    margin: 0;
+    white-space: pre-wrap;
+    word-break: break-word;
+    border: none;
+    outline: none;
     resize: none;
-    caret-color: white;
-    z-index: 10;
-    padding-right: 48px;   /* match gutter width  */
-    overflow-x: hidden;    /* hide under-gutter text  */
+    background: transparent;
+    color: var(--text-color);
+    line-height: 20px;
+    tab-size: 2;
+    overflow-x: hidden;          /* kill horizontal scroll */
+    overflow-y: auto;
+}
+.editor-textarea { z-index: 10; caret-color: white; }
+.editor-overlay { pointer-events: none; z-index: 5; color: transparent; }
+
+/* ----------  LINE NUMBERS  ---------- */
+.line-numbers {
+    width: 48px;
+    text-align: right;
+    padding: 4px 10px 4px 0;
+    color: #858585;
+    background: #1e1e1e;
+    border-right: 1px solid #2b2b2b;
+    user-select: none;
+    font-size: 13px;
+    line-height: 20px;
+    overflow: hidden;
 }
 
-        .editor-overlay {
-            pointer-events: none;
-            z-index: 5;
-            color: transparent; 
-        }
-        
-        .line-numbers {
-             width: 48px;
-             text-align: right;
-             padding-right: 10px;
-             padding-top: 4px;
-             color: #858585;
-             background-color: #1e1e1e;
-             border-right: 1px solid #2b2b2b;
-             user-select: none;
-             line-height: 20px;
-             font-size: 13px;
-        }
+/* ----------  SYNTAX COLORS  ---------- */
+.token.keyword { color: #569cd6; }
+.token.string { color: #ce9178; }
+.token.comment { color: #6a9955; }
+.token.number { color: #b5cea8; }
+.token.punctuation { color: #d4d4d4; }
+.token.variable { color: #9cdcfe; }
+.token.tag, .token.selector, .token.header, .token.list { color: #d7ba7d; }
+.token.bold { font-weight: bold; color: #ffd700; }
+.token.italic { font-style: italic; color: #c8c8c8; }
+.token.link { color: #4ec9b0; text-decoration: underline; }
 
-        /* Syntax Highlighting Colors */
-        .token.keyword { color: #569cd6; } /* Blue */
-        .token.string { color: #ce9178; } /* Orange */
-        .token.comment { color: #6a9955; } /* Green */
-        .token.number { color: #b5cea8; } /* Light Green */
-        .token.punctuation { color: #d4d4d4; } /* White/Grey */
-        .token.variable { color: #9cdcfe; } /* Light Blue */
-        .token.tag, .token.selector, .token.header, .token.list { color: #d7ba7d; } /* Yellow */
-        .token.bold { font-weight: bold; color: #ffd700; }
-        .token.italic { font-style: italic; color: #c8c8c8; }
-        .token.link { color: #4ec9b0; text-decoration: underline; }
+/* ----------  MARKDOWN PREVIEW  ---------- */
+#secondary-panel {
+    background: #f3f3f3;
+    color: #333;
+    padding: 16px;
+    font-size: 14px;
+    line-height: 1.6;
+    border-left: 1px solid #1e1e1e;
+    overflow-y: auto;
+    overflow-x: hidden;          /* no sideways scroll */
+    word-break: break-word;
+}
+#markdown-preview-content h1 { font-size: 1.6em; border-bottom: 2px solid #ddd; padding-bottom: .3em; margin-top: 1.2em; }
+#markdown-preview-content h2 { font-size: 1.4em; border-bottom: 1px solid #eee; padding-bottom: .3em; margin-top: 1.1em; }
+#markdown-preview-content h3 { font-size: 1.2em; margin-top: 1em; }
+#markdown-preview-content p { margin-bottom: .8em; }
+#markdown-preview-content ul, #markdown-preview-content ol { margin-left: 20px; margin-bottom: .8em; }
+#markdown-preview-content li { margin-bottom: .3em; }
+#markdown-preview-content code { background: #e0e0e0; padding: 2px 4px; border-radius: 3px; font-family: Consolas, monospace; }
+#markdown-preview-content pre code {
+    display: block;
+    padding: 10px;
+    background: #2d2d2d;
+    color: #ccc;
+    overflow-x: auto;   /* code may scroll internally if very long, but page never does */
+    border-radius: 4px;
+    margin: 1em 0;
+    word-break: normal;
+}
+#markdown-preview-content blockquote {
+    border-left: 4px solid #007acc;
+    padding-left: 12px;
+    color: #555;
+    margin: 1em 0;
+    font-style: italic;
+}
 
-        /* Secondary Panel Styling (Markdown Preview) */
-        #secondary-panel {
-            background-color: #f3f3f3; 
-            color: #333333;
-            padding: 20px;
-            font-size: 14px;
-            line-height: 1.6;
-            border-left: 1px solid #1e1e1e;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            overflow-y: auto; /* Ensure preview content scrolls */
-        }
-        /* Prose-like styling for rendered markdown content */
-        #markdown-preview-content h1 { font-size: 1.8em; border-bottom: 2px solid #dddddd; padding-bottom: 0.3em; margin-top: 1.5em; }
-        #markdown-preview-content h2 { font-size: 1.6em; border-bottom: 1px solid #eeeeee; padding-bottom: 0.3em; margin-top: 1.4em; }
-        #markdown-preview-content h3 { font-size: 1.4em; margin-top: 1.3em; }
-        #markdown-preview-content p { margin-bottom: 1em; }
-        #markdown-preview-content ul, #markdown-preview-content ol { margin-left: 20px; margin-bottom: 1em; }
-        #markdown-preview-content li { margin-bottom: 0.3em; }
-        #markdown-preview-content code { background-color: #e0e0e0; padding: 2px 4px; border-radius: 3px; font-family: Consolas, monospace; }
-        #markdown-preview-content pre code { 
-            display: block; 
-            padding: 10px; 
-            background-color: #2d2d2d; 
-            color: #cccccc; 
-            overflow-x: auto; 
-            border-radius: 4px; 
-            margin-top: 1em; 
-            margin-bottom: 1em; 
-        }
-        #markdown-preview-content blockquote {
-            border-left: 4px solid #007acc;
-            padding-left: 15px;
-            color: #555555;
-            margin: 1em 0;
-            font-style: italic;
-        }
-
-        /* Hidden Class for Layout Toggling */
-        .visually-hidden {
-            display: none !important;
-        }
-    </style>
+/* ----------  MOBILE (≤ 768 px)  ---------- */
+@media (max-width: 768px) {
+    /* stack editor / preview vertically */
+    #editor-content-wrapper { flex-direction: column; }
+    #primary-editor-panel, #secondary-panel { flex: 1 1 50%; width: 100%; border: 0; border-top: 1px solid #1e1e1e; }
+    /* bigger tap targets */
+    button, [role="tab"], [role="listitem"] { min-height: 44px; }
+    /* sidebar becomes off-canvas drawer */
+    #sidebar-panel { position: absolute; inset: 0 auto; z-index: 40; flex: 0 0 80vw; max-width: 280px; transform: translateX(-100%); transition: transform .3s; }
+    #sidebar-panel:not(.visually-hidden) { transform: translateX(0); }
+    #activity-bar { z-index: 50; }
+}
+</style>
 </head>
 <body class="flex flex-col">
 
@@ -511,19 +497,11 @@
         }
         
         /** NEW: Toggles the visibility of the notes explorer sidebar. */
-        const toggleSidebar = () => {
-            isSidebarOpen = !isSidebarOpen;
-            
-            if (isSidebarOpen) {
-                $sidebarPanel.style.width = '280px';
-                $sidebarPanel.classList.remove('visually-hidden');
-            } else {
-                $sidebarPanel.style.width = '0px';
-                $sidebarPanel.classList.add('visually-hidden');
-            }
-            saveFiles();
-        };
-
+       const toggleSidebar = () => {
+    isSidebarOpen = !isSidebarOpen;
+    $sidebarPanel.classList.toggle('visually-hidden', !isSidebarOpen);
+    saveFiles();
+};
         const toggleSecondaryPanel = () => {
             isSecondaryPanelOpen = !isSecondaryPanelOpen;
             const activeFile = getFile(activeTabId);
