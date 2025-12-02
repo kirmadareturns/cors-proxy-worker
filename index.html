@@ -278,8 +278,8 @@
         </div>
     </div>
 
-    <!-- 3. STATUS BAR -->
-    <div id="status-bar" class="h-[22px] bg-[var(--status-bg)] text-white flex items-center justify-between px-3 text-[11px] shrink-0" role="status" aria-live="polite">
+    <!-- 3. STATUS BAR (Modified to include Jump to Line button and overlay) -->
+    <div id="status-bar" class="h-[22px] bg-[var(--status-bg)] text-white flex items-center justify-between px-3 text-[11px] shrink-0 relative" role="status" aria-live="polite">
         <div class="flex items-center space-x-4">
            <div class="flex items-center hover:bg-white/20 px-1 cursor-default rounded-sm" title="Data Storage Location">
               <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
@@ -289,13 +289,25 @@
               <span id="status-messages">Auto-Saving Enabled</span>
            </div>
         </div>
+        
+        <!-- Right Side: Line/Col, Encoding, Lang, Preview -->
         <div class="flex items-center space-x-4">
-           <span id="status-line-col" class="cursor-default hover:bg-white/20 px-1 rounded-sm" aria-label="Cursor position">Ln 1, Col 1</span>
+           <!-- NEW: Clickable Line/Col Button -->
+           <button id="jump-to-line-btn" title="Click to jump to a specific line" class="hover:bg-white/20 px-1 rounded-sm focus:outline-none focus:ring-1 focus:ring-white" aria-label="Cursor position">
+               <span id="status-line-col">Ln 1, Col 1</span>
+           </button>
+           
            <span id="status-encoding" class="cursor-default hover:bg-white/20 px-1 rounded-sm" aria-label="File Encoding">UTF-8</span>
            <span id="status-lang" class="cursor-pointer hover:bg-white/20 px-1 rounded-sm" aria-label="Current Language">TEXT</span>
            <button id="toggle-preview-btn" onclick="toggleSecondaryPanel()" class="hover:bg-white/20 px-1 rounded-sm visually-hidden focus:outline-none focus:ring-2 focus:ring-white" title="Toggle Markdown Preview" aria-label="Toggle Markdown Preview">
                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.55 4.55a2 2 0 010 2.83l-4.55 4.55-4.55-4.55a2 2 0 010-2.83L15 10zm-9-5h6M6 9h6M6 13h6"/></svg>
            </button>
+        </div>
+
+        <!-- NEW: Jump Input Overlay (positioned above the status bar) -->
+        <div id="jump-input-overlay" class="absolute bottom-full right-4 p-2 bg-gray-800 rounded-lg shadow-2xl hidden z-30" style="transform: translateY(-4px);">
+            <label for="jump-input" class="text-white text-xs mr-2 font-semibold">Go to Line:</label>
+            <input type="number" id="jump-input" class="w-20 p-1 text-sm bg-gray-900 text-white rounded focus:outline-none focus:ring-2 focus:ring-[#007acc]" min="1" value="1" aria-label="Line number input">
         </div>
     </div>
 
@@ -332,6 +344,11 @@
         const $editorBreadcrumbs = document.getElementById('editor-breadcrumbs');
         const $togglePreviewBtn = document.getElementById('toggle-preview-btn');
         const $statusMessages = document.getElementById('status-messages');
+        
+        // NEW: Jump to Line Elements
+        const $jumpToLineBtn = document.getElementById('jump-to-line-btn');
+        const $jumpInputOverlay = document.getElementById('jump-input-overlay');
+        const $jumpInput = document.getElementById('jump-input');
 
         // --- UTILS: File and Language Handling ---
 
@@ -651,7 +668,8 @@
             $mainEditor.value = activeFile.content;
             updateLineNumbers();
             updateSyntaxOverlay();
-            updateStatusBar(activeFile.name); 
+            updateTitleBar(activeFile.name); // Updated to use new function
+            updateLineColDisplay(); // NEW: Initial display update
             $mainEditor.focus();
 
             // 3. Handle Preview Panel (Markdown only)
@@ -833,11 +851,50 @@
             isFileDirty = dirty;
             $unsavedIndicator.classList.toggle('opacity-0', !dirty);
             const activeFile = getFile(activeTabId);
-            $titleBar.textContent = `Notes App | ${activeFile?.name || 'Welcome'}${isFileDirty ? ' *' : ''}`;
+            updateTitleBar(activeFile?.name || 'Welcome'); // UPDATED: Use new title bar function
             renderStatusBar();
             renderTabs();
         };
         
+        const updateTitleBar = (fileName) => {
+            $titleBar.textContent = `Notes App | ${fileName}${isFileDirty ? ' *' : ''}`;
+        };
+
+        const updateLineColDisplay = () => {
+            const activeFile = getFile(activeTabId);
+            if (!activeFile) {
+                $statusBarLineCol.textContent = 'Ln 1, Col 1';
+                return;
+            }
+            
+            const cursorStart = $mainEditor.selectionStart;
+            const content = $mainEditor.value.substring(0, cursorStart);
+            const line = content.split('\n').length;
+            // The column is the length of the current line segment + 1 (since column is 1-indexed)
+            const column = cursorStart - content.lastIndexOf('\n');
+            
+            $statusBarLineCol.textContent = `Ln ${line}, Col ${column}`;
+        };
+
+        /** Jumps the cursor to the specified line number. */
+        const jumpToLine = (lineNumber) => {
+            const lines = $mainEditor.value.split('\n');
+            const targetLine = Math.min(Math.max(1, parseInt(lineNumber)), lines.length);
+            
+            let charIndex = 0;
+            // Calculate the total character length up to the start of the target line
+            for (let i = 0; i < targetLine - 1; i++) {
+                // +1 accounts for the newline character (LF or CRLF) which split() removes
+                charIndex += lines[i].length + 1; 
+            }
+
+            $mainEditor.selectionStart = charIndex;
+            $mainEditor.selectionEnd = charIndex;
+            $mainEditor.focus();
+            updateLineColDisplay();
+            $jumpInputOverlay.classList.add('hidden');
+        };
+
         const updateFileContent = (content) => {
             const file = getFile(activeTabId);
             if (file && file.content !== content) {
@@ -854,16 +911,8 @@
             $lineNumbers.innerHTML = linesHtml;
         };
         
-        const updateStatusBar = (fileName) => {
-            const cursorStart = $mainEditor.selectionStart;
-            const content = $mainEditor.value.substring(0, cursorStart);
-            const line = content.split('\n').length;
-            const column = cursorStart - content.lastIndexOf('\n');
-            
-            $statusBarLineCol.textContent = `Ln ${line}, Col ${column + 1}`;
-            $titleBar.textContent = `Notes App | ${fileName}${isFileDirty ? ' *' : ''}`;
-        };
-        
+        // Removed old updateStatusBar function and replaced usage with updateLineColDisplay and updateTitleBar
+
         const handleEditorScroll = () => {
             $lineNumbers.scrollTop = $mainEditor.scrollTop;
             $syntaxOverlay.scrollTop = $mainEditor.scrollTop;
@@ -998,6 +1047,9 @@
             
             // Handle Paragraphs
             html = html.split('\n\n').map(block => {
+                if (!block.startsWith('<h') && !block.startsWith('<ul>') && block.startsWith('<p') && block.trim() !== '') {
+                    return block; // Already wrapped in paragraph from previous iteration/content
+                }
                 if (!block.startsWith('<h') && !block.startsWith('<ul>') && block.trim() !== '') {
                     return `<p>${block}</p>`;
                 }
@@ -1016,7 +1068,7 @@
             updateFileContent(content);
             updateLineNumbers();
             updateSyntaxOverlay();
-            updateStatusBar(getFile(activeTabId).name);
+            updateLineColDisplay(); // UPDATED: Use new line/col function
 
             if (getFile(activeTabId).language === 'markdown' && isSecondaryPanelOpen) {
                 renderMarkdownPreview(content);
@@ -1058,15 +1110,55 @@
             }
             
             updateUI();
+            updateLineColDisplay(); // Initial call after load
 
             // Set up main editor listeners
             $mainEditor.addEventListener('input', handleEditorInput);
             $mainEditor.addEventListener('scroll', handleEditorScroll);
-            $mainEditor.addEventListener('keyup', (e) => updateStatusBar(getFile(activeTabId)?.name || ''));
-            $mainEditor.addEventListener('click', (e) => updateStatusBar(getFile(activeTabId)?.name || ''));
-            $mainEditor.addEventListener('keydown', handleTabKey);
+            
+            // UPDATED: Use updateLineColDisplay for cursor movement
+            $mainEditor.addEventListener('keyup', updateLineColDisplay);
+            $mainEditor.addEventListener('click', updateLineColDisplay);
             $mainEditor.addEventListener('focus', () => {
                 if (activeTabId) updateSyntaxOverlay(); // Redraw on focus for consistency
+                updateLineColDisplay(); 
+            });
+            $mainEditor.addEventListener('keydown', handleTabKey);
+            
+            // NEW: Jump to Line Button Listener
+            $jumpToLineBtn.addEventListener('click', () => {
+                if (!activeTabId) return;
+                $jumpInputOverlay.classList.toggle('hidden');
+                if (!$jumpInputOverlay.classList.contains('hidden')) {
+                    // Extract the current line number from the display text
+                    const currentLineText = $statusBarLineCol.textContent.split(',')[0].replace('Ln ', '').trim();
+                    const currentLine = parseInt(currentLineText);
+                    $jumpInput.value = currentLine || 1;
+                    $jumpInput.select(); // Selects the number for easy overtyping
+                }
+            });
+
+            // NEW: Jump Input Listener (Handle Enter key and Escape)
+            $jumpInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    jumpToLine($jumpInput.value);
+                } else if (e.key === 'Escape') {
+                    $jumpInputOverlay.classList.add('hidden');
+                    $mainEditor.focus();
+                }
+            });
+            
+            // NEW: Global click handler to hide the overlay
+            document.addEventListener('click', (e) => {
+                // Check if the click is outside both the button and the overlay, and the overlay is visible
+                const target = e.target;
+                const isJumpButton = $jumpToLineBtn && $jumpToLineBtn.contains(target);
+                const isJumpOverlay = $jumpInputOverlay && $jumpInputOverlay.contains(target);
+                
+                if (!isJumpButton && !isJumpOverlay && !$jumpInputOverlay.classList.contains('hidden')) {
+                    $jumpInputOverlay.classList.add('hidden');
+                }
             });
         });
         
