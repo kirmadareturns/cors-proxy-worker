@@ -420,7 +420,8 @@
                 } else {
                     // Default starter files
                     files = [
-                        { id: generateId(), name: 'Welcome Note.md', type: 'file', content: '# Welcome to your Notes IDE\n\nThis is a single-pane editor for quick notes and code snippets.\n\n### Important:\n\n* **Auto-Save:** Your notes are automatically saved to your browser\'s local storage every second.\n* **Markdown Preview:** Click the preview icon in the status bar (bottom right) to see the rendered output.\n\nFiles are automatically saved to your browser\'s local storage.', language: 'markdown' },
+                        { id: generateId(), name: 'Welcome Note.md', type: 'file', content:
+'# Private Notebook\n\nThis page stores your notes inside your browser. If you clear browser data or switch devices your notes disappear. Export a ZIP often to keep copies safe.\n\nNew note: plus icon or Ctrl Shift N. Open note: click its name. Import: up arrow. Export ZIP: down arrow or Ctrl Shift S. Close tab: Ctrl Shift W. Markdown preview: Ctrl Shift P.', language: 'markdown' },
                         { id: generateId(), name: 'Snippet.js', type: 'file', content: '// JavaScript Syntax Test\nconst calculate = (a, b) => {\n  // Returns the sum of two numbers\n  return a + b; // keyword, variable, operator, punctuation, number\n};\n\ncalculate(10, 25);', language: 'javascript' },
                     ];
                     openTabs = [files.find(f => f.name === 'Welcome Note.md').id];
