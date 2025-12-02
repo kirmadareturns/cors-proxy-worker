@@ -3,141 +3,235 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple VS Code Notes</title>
+    <title>VS Code Notes Clone (100% HTML/JS)</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Use Inter font family -->
     <style>
+        /* VS Code Dark Theme Colors */
         :root {
-            --sidebar-width: 260px;
-            --activity-bar-width: 48px;
             --editor-bg: #1e1e1e;
             --sidebar-bg: #252526;
             --activity-bg: #333333;
             --status-bg: #007acc;
             --text-color: #cccccc;
             --active-color: #007acc;
+            --selection-bg: #264f78;
         }
-        body {
+
+        /* Base Styles */
+        body, html {
+            height: 100%;
+            margin: 0;
+            overflow: hidden;
             font-family: 'Inter', sans-serif;
             background-color: var(--editor-bg);
             color: var(--text-color);
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            height: 100vh;
         }
+
+        /* Mono Font for Editor/Code */
         .mono-font {
             font-family: Consolas, 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 20px; /* 1.428em for 14px */
         }
-        /* Custom scrollbar styles to match VS Code dark theme */
+
+        /* Custom Scrollbar (VS Code style) */
         .custom-scrollbar::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
+            width: 10px;
+            height: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background-color: rgba(90, 90, 90, 0.7);
-            border-radius: 4px;
+            border-radius: 5px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
             background-color: transparent;
         }
-        .custom-scrollbar-y-only {
-            overflow-y: auto;
-            overflow-x: hidden;
+
+        /* Editor Area Setup */
+        .editor-textarea, .editor-overlay {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            padding: 4px 10px 4px 0; /* Padding left is handled by line numbers */
+            margin: 0;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            border: none;
+            outline: none;
+            box-sizing: border-box;
+            line-height: 20px;
+            tab-size: 2;
         }
-        /* Hide scrollbar for the tabs area */
-        .tabs-container {
-             scrollbar-width: none; /* Firefox */
-             -ms-overflow-style: none;  /* IE and Edge */
+
+        .editor-textarea {
+            background-color: transparent;
+            color: var(--text-color);
+            resize: none;
+            caret-color: white;
+            z-index: 10;
         }
-        .tabs-container::-webkit-scrollbar {
-             display: none; /* Chrome, Safari, Opera */
+
+        .editor-overlay {
+            pointer-events: none;
+            z-index: 5;
+            color: transparent; /* Text must be transparent, spans color it */
+        }
+        
+        .line-numbers {
+             width: 48px;
+             text-align: right;
+             padding-right: 10px;
+             padding-top: 4px;
+             color: #858585;
+             background-color: #1e1e1e;
+             border-right: 1px solid #2b2b2b;
+             user-select: none;
+             line-height: 20px;
+             font-size: 13px;
+        }
+
+        /* Syntax Highlighting Colors (Custom Tokenized) */
+        .token.keyword { color: #569cd6; } /* const, return, function, if, class */
+        .token.string { color: #ce9178; } /* "string" */
+        .token.comment { color: #6a9955; } /* // comment */
+        .token.number { color: #b5cea8; } /* 123 */
+        .token.punctuation { color: #d4d4d4; } /* {} ; */
+        .token.variable { color: #9cdcfe; } /* local variable names */
+        .token.tag, .token.selector { color: #d7ba7d; } /* HTML/Markdown tags/elements */
+        .token.bold { font-weight: bold; color: #ffd700; }
+        .token.italic { font-style: italic; color: #c8c8c8; }
+        .token.link { color: #4ec9b0; text-decoration: underline; }
+
+        /* Secondary Panel Styling (Markdown Preview) */
+        #secondary-panel {
+            background-color: #f3f3f3; /* Light background for reading */
+            color: #333333;
+            padding: 20px;
+            font-size: 14px;
+            line-height: 1.6;
+            border-left: 1px solid #1e1e1e;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        #secondary-panel h1, #secondary-panel h2 {
+            border-bottom: 1px solid #dddddd;
+            padding-bottom: 5px;
+            margin-top: 20px;
+        }
+        #secondary-panel code {
+            background-color: #e0e0e0;
+            padding: 2px 4px;
+            border-radius: 3px;
+        }
+
+        /* Hidden Class for Layout Toggling */
+        .visually-hidden {
+            display: none !important;
         }
     </style>
 </head>
-<body class="antialiased">
+<body class="flex flex-col">
 
-    <!-- 1. TOP TITLE BAR -->
-    <div class="h-[30px] w-full bg-slate-900 flex items-center justify-between px-2 text-[12px] border-b border-[#2b2b2b] shadow-lg">
-        <div class="flex space-x-4 ml-2 text-[#999]">
-           <span class="hover:text-white px-1 rounded cursor-default">File</span>
-           <span class="hover:text-white px-1 rounded cursor-default">Edit</span>
-           <span class="hover:text-white px-1 rounded cursor-default">View</span>
+    <!-- 1. TOP TITLE BAR (Simplified macOS style for aesthetics) -->
+    <div class="h-[30px] w-full bg-slate-900 flex items-center justify-between px-2 text-[12px] border-b border-[#2b2b2b] shadow-lg shrink-0">
+        <div class="flex space-x-2 ml-2">
+            <div class="h-3 w-3 rounded-full bg-red-500 hover:scale-110 transition-transform cursor-pointer" title="Close Window"></div>
+            <div class="h-3 w-3 rounded-full bg-yellow-500 hover:scale-110 transition-transform cursor-pointer" title="Minimize Window"></div>
+            <div class="h-3 w-3 rounded-full bg-green-500 hover:scale-110 transition-transform cursor-pointer" title="Maximize Window"></div>
         </div>
-        <div id="title-bar" class="text-white font-medium text-sm">VS Code Clone - Welcome</div>
-        <div class="flex space-x-2">
-           <div class="h-3 w-3 rounded-full bg-yellow-500 hover:scale-110 transition-transform cursor-pointer"></div>
-           <div class="h-3 w-3 rounded-full bg-green-500 hover:scale-110 transition-transform cursor-pointer"></div>
+        <div id="title-bar" class="text-white font-medium text-sm">Notes App | Local Storage [Workspace]</div>
+        <div class="flex space-x-4 mr-2 text-[#999]">
+            <span class="hover:text-white px-1 rounded cursor-default">Help</span>
         </div>
     </div>
 
-    <!-- 2. MAIN LAYOUT -->
+    <!-- 2. MAIN LAYOUT (Activity Bar + Sidebar + Editor) -->
     <div class="flex flex-1 overflow-hidden">
         
         <!-- ACTIVITY BAR -->
-        <div id="activity-bar" class="w-[var(--activity-bar-width)] bg-[var(--activity-bg)] flex flex-col items-center py-2 space-y-2 border-r border-[#2b2b2b] shrink-0">
-            <!-- Icons rendered by JavaScript -->
+        <div id="activity-bar" class="w-[48px] bg-[var(--activity-bg)] flex flex-col items-center py-2 space-y-2 border-r border-[#2b2b2b] shrink-0">
+            <!-- Icons injected by JavaScript -->
         </div>
 
         <!-- SIDEBAR PANEL -->
-        <div id="sidebar-panel" class="w-[var(--sidebar-width)] bg-[var(--sidebar-bg)] flex flex-col border-r border-[#1e1e1e] shrink-0 transition-all duration-200">
+        <div id="sidebar-panel" class="w-[280px] bg-[var(--sidebar-bg)] flex flex-col border-r border-[#1e1e1e] shrink-0 transition-all duration-200">
             
-            <!-- Sidebar Title -->
-            <div id="sidebar-title" class="h-[35px] flex items-center px-4 text-[11px] font-bold tracking-wide uppercase text-[#bbbbbb] mt-2 border-b border-[#303030]">
-                EXPLORER
+            <!-- Sidebar Header -->
+            <div id="sidebar-header" class="h-[35px] flex items-center justify-between px-4 text-[11px] font-bold tracking-wide uppercase text-[#bbbbbb] mt-2 border-b border-[#303030] shrink-0">
+                <span id="sidebar-title">EXPLORER</span>
+                <div id="sidebar-actions" class="text-gray-400 flex space-x-2">
+                    <button onclick="document.getElementById('file-menu-new-file').click();" title="New File" class="hover:text-white">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2zM12 18v-6m3 3h-6"/></svg>
+                    </button>
+                    <button onclick="document.getElementById('file-menu-new-folder').click();" title="New Folder" class="hover:text-white">
+                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2zM12 9v6m-3-3h6"/></svg>
+                    </button>
+                </div>
             </div>
 
             <!-- SIDEBAR CONTENT -->
-            <div id="sidebar-content" class="flex-1 custom-scrollbar custom-scrollbar-y-only">
-                <!-- Content injected here -->
+            <div id="sidebar-content" class="flex-1 custom-scrollbar overflow-y-auto overflow-x-hidden">
+                <!-- Content injected here (Explorer, Search, Git, Settings) -->
             </div>
         </div>
 
-        <!-- EDITOR AREA -->
-        <div class="flex-1 flex flex-col bg-[var(--editor-bg)] overflow-hidden">
+        <!-- EDITOR AREA (Tabs + Content) -->
+        <div id="editor-area" class="flex-1 flex flex-col bg-[var(--editor-bg)] overflow-hidden">
           
             <!-- TABS HEADER -->
-            <div id="tabs-header" class="flex bg-[#2d2d2d] overflow-x-auto tabs-container border-b border-[#1e1e1e]">
+            <div id="tabs-header" class="flex bg-[#2d2d2d] overflow-x-auto border-b border-[#1e1e1e] shrink-0">
                 <!-- Tabs injected here -->
             </div>
 
             <!-- EDITOR CONTENT -->
-            <div id="editor-container" class="flex-1 relative flex overflow-hidden">
-                <!-- Editor/Welcome message injected here -->
+            <div id="editor-content-wrapper" class="flex-1 relative flex overflow-hidden">
+                
+                <!-- Welcome/Empty State -->
                 <div id="welcome-message" class="absolute inset-0 flex flex-col items-center justify-center text-[#3b3b3b] transition-opacity duration-300">
-                    <svg class="w-32 h-32" fill="none" stroke="currentColor" stroke-width="0.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <svg class="w-24 h-24" fill="none" stroke="currentColor" stroke-width="0.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 011.5 1.5M10.5 6a1.5 1.5 0 00-1.5 1.5M3.75 6H7.5m3 1.5V11.25m3-4.5V12M12 2.25h3.75m-3 0h-3.75m2.25 0a1.5 1.5 0 011.5 1.5m-3 0a1.5 1.5 0 00-1.5 1.5M12 12V21M12 12V12"></path>
                     </svg>
                     <div class="mt-8 space-y-2 text-center">
-                        <p class="text-[var(--text-color)] text-lg">Welcome to your Local VS Code Clone!</p>
-                        <p class="text-[var(--text-color)] text-sm">Your files are saved directly in this browser's local storage.</p>
-                        <button onclick="document.getElementById('file-menu-new-file').click()" class="mt-4 bg-[#007acc] text-white px-4 py-1 rounded hover:bg-[#006bbd] transition-colors shadow-md">Create New File</button>
+                        <p class="text-[var(--text-color)] text-xl">100% Functional VS Code Clone</p>
+                        <p class="text-[var(--text-color)] text-sm">Click <span class="text-[var(--active-color)]">Explorer</span> on the left or the <span class="text-[var(--active-color)]">New File</span> icon to begin.</p>
+                        <button onclick="document.getElementById('file-menu-new-file').click()" class="mt-4 bg-[#007acc] text-white px-4 py-1 rounded-sm hover:bg-[#006bbd] transition-colors shadow-md">Start Notetaking</button>
                     </div>
                 </div>
                 
-                <!-- Main Editor -->
-                <div id="editor-wrapper" class="hidden absolute inset-0 flex flex-col">
-                    <div id="editor-breadcrumbs" class="h-[22px] bg-[var(--editor-bg)] flex items-center px-4 text-[11px] text-[#888888] border-b border-[#3e3e42] shrink-0">
-                         <!-- Breadcrumbs injected here -->
-                    </div>
-                    <div class="flex-1 relative flex mono-font text-[14px]">
-                        <!-- Line Numbering -->
-                        <div id="line-numbers" class="w-[45px] bg-[#1e1e1e] text-[#858585] text-right pr-3 pt-1 select-none leading-5 text-xs border-r border-[#2b2b2b] overflow-hidden custom-scrollbar-y-only shrink-0"></div>
-                        
-                        <!-- Textarea and Syntax Overlay -->
-                        <div class="relative flex-1 h-full">
-                            <!-- Syntax Overlay (for visual effect, must mirror textarea scroll) -->
-                            <pre id="syntax-overlay" class="absolute inset-0 m-0 pt-1 px-2 pointer-events-none select-none leading-5" style="z-index: 5; color: transparent;"></pre>
+                <!-- Main Editor Group Wrapper -->
+                <div id="editor-group-wrapper" class="flex flex-1 visually-hidden">
+                    
+                    <!-- PRIMARY EDITOR PANEL -->
+                    <div id="primary-editor-panel" class="relative flex flex-col flex-1 overflow-hidden">
+                        <div id="editor-breadcrumbs" class="h-[22px] bg-[#2d2d2d] flex items-center px-4 text-[11px] text-[#888888] border-b border-[#3e3e42] shrink-0 visually-hidden">
+                            <!-- Breadcrumbs injected here -->
+                        </div>
+                        <div id="editor-wrapper" class="flex-1 relative flex overflow-hidden">
+                            <!-- Line Numbering -->
+                            <div id="line-numbers" class="line-numbers custom-scrollbar overflow-y-auto shrink-0"></div>
                             
-                            <!-- Main Textarea -->
-                            <textarea 
-                                id="main-editor" 
-                                class="absolute inset-0 w-full h-full bg-transparent text-[#d4d4d4] resize-none focus:outline-none pt-1 px-2 leading-5 whitespace-pre custom-scrollbar custom-scrollbar-y-only" 
-                                spellcheck="false"
-                                style="caret-color: white; z-index: 10;"
-                            ></textarea>
-                            <div id="unsaved-indicator" class="absolute top-2 right-4 h-2 w-2 rounded-full bg-white opacity-0 transition-opacity z-20"></div>
+                            <!-- Editor + Syntax Overlay -->
+                            <div class="relative flex-1 h-full">
+                                <pre id="syntax-overlay" class="editor-overlay mono-font custom-scrollbar overflow-y-auto"></pre>
+                                <textarea 
+                                    id="main-editor" 
+                                    class="editor-textarea mono-font custom-scrollbar overflow-y-auto" 
+                                    spellcheck="false"
+                                    onfocus="this.style.outline = '1px solid var(--active-color)'"
+                                    onblur="this.style.outline = 'none'"
+                                ></textarea>
+                                <!-- Unsaved Indicator Circle -->
+                                <div id="unsaved-indicator" class="absolute top-2 right-4 h-2 w-2 rounded-full bg-white opacity-0 transition-opacity z-20" title="Unsaved changes"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECONDARY (PREVIEW) PANEL -->
+                    <div id="secondary-panel" class="flex-1 custom-scrollbar overflow-y-auto visually-hidden">
+                        <h2 class="text-xl font-semibold mb-4 border-b pb-2">Markdown Preview</h2>
+                        <div id="markdown-preview-content" class="prose max-w-none">
+                            <!-- Rendered Markdown Content -->
                         </div>
                     </div>
                 </div>
@@ -148,39 +242,53 @@
     <!-- 3. STATUS BAR -->
     <div id="status-bar" class="h-[22px] bg-[var(--status-bg)] text-white flex items-center justify-between px-3 text-[11px] shrink-0">
         <div class="flex items-center space-x-4">
-           <div class="flex items-center hover:bg-white/20 px-1 cursor-default rounded">
-              <span id="status-git">local*</span>
+           <div class="flex items-center hover:bg-white/20 px-1 cursor-default rounded-sm">
+              <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
+              <span id="status-git">local-fs</span>
            </div>
-           <div class="flex items-center hover:bg-white/20 px-1 cursor-default rounded">
-              <span id="status-messages">0 Problems</span>
+           <div class="flex items-center hover:bg-white/20 px-1 cursor-default rounded-sm">
+              <span id="status-messages">No Errors</span>
            </div>
         </div>
         <div class="flex items-center space-x-4">
-           <span id="status-line-col" class="cursor-default hover:bg-white/20 px-1 rounded">Ln 1, Col 1</span>
-           <span id="status-lang" class="cursor-pointer hover:bg-white/20 px-1 rounded">TEXT</span>
+           <span id="status-line-col" class="cursor-default hover:bg-white/20 px-1 rounded-sm">Ln 1, Col 1</span>
+           <span id="status-encoding" class="cursor-default hover:bg-white/20 px-1 rounded-sm">UTF-8</span>
+           <span id="status-lang" class="cursor-pointer hover:bg-white/20 px-1 rounded-sm">TEXT</span>
+           <button id="toggle-preview-btn" onclick="toggleSecondaryPanel()" class="hover:bg-white/20 px-1 rounded-sm visually-hidden" title="Toggle Markdown Preview">
+                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.55 4.55a2 2 0 010 2.83l-4.55 4.55-4.55-4.55a2 2 0 010-2.83L15 10zm-9-5h6M6 9h6M6 13h6"/></svg>
+           </button>
         </div>
     </div>
 
     <script>
-        const LS_KEY = 'vscode_clone_workspace_files_html';
+        // --- CONSTANTS & CONFIG ---
+        const LS_KEY = 'vscode_notes_clone_full_html';
         const generateId = () => Math.random().toString(36).substring(2, 9);
+        const AUTO_SAVE_DELAY = 1000; // ms
 
         // --- GLOBAL STATE ---
         let files = [];
         let openTabs = [];
         let activeTabId = null;
-        let sidebarView = 'explorer';
+        let sidebarView = 'explorer'; // explorer, search, git, settings
         let isFileDirty = false;
         let isRenaming = null; // file id being renamed
+        let isSidebarOpen = true;
+        let isSecondaryPanelOpen = false;
+        let saveTimer; // for debouncing saves
 
         // --- DOM REFERENCES ---
         const $activityBar = document.getElementById('activity-bar');
+        const $sidebarPanel = document.getElementById('sidebar-panel');
         const $sidebarTitle = document.getElementById('sidebar-title');
         const $sidebarContent = document.getElementById('sidebar-content');
         const $tabsHeader = document.getElementById('tabs-header');
-        const $editorContainer = document.getElementById('editor-container');
+        const $editorContainer = document.getElementById('editor-content-wrapper');
         const $welcomeMessage = document.getElementById('welcome-message');
-        const $editorWrapper = document.getElementById('editor-wrapper');
+        const $editorGroupWrapper = document.getElementById('editor-group-wrapper');
+        const $primaryEditorPanel = document.getElementById('primary-editor-panel');
+        const $secondaryPanel = document.getElementById('secondary-panel');
+        const $markdownPreviewContent = document.getElementById('markdown-preview-content');
         const $mainEditor = document.getElementById('main-editor');
         const $syntaxOverlay = document.getElementById('syntax-overlay');
         const $lineNumbers = document.getElementById('line-numbers');
@@ -189,64 +297,77 @@
         const $statusBarLang = document.getElementById('status-lang');
         const $unsavedIndicator = document.getElementById('unsaved-indicator');
         const $editorBreadcrumbs = document.getElementById('editor-breadcrumbs');
+        const $togglePreviewBtn = document.getElementById('toggle-preview-btn');
 
-        // --- UTILS ---
+        // --- UTILS: File and Language Handling ---
 
         const getLanguageFromExt = (name) => {
-            if (name.endsWith('.js') || name.endsWith('.jsx') || name.endsWith('.ts')) return 'javascript';
+            if (name.endsWith('.js') || name.endsWith('.ts')) return 'javascript';
             if (name.endsWith('.md')) return 'markdown';
             if (name.endsWith('.json')) return 'json';
+            if (name.endsWith('.html')) return 'html';
             return 'plaintext';
         };
         
         const getFileIcon = (name) => {
             const lang = getLanguageFromExt(name);
             switch(lang) {
-                case 'javascript':
-                    return '<svg class="w-4 h-4 text-yellow-400 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-4h-2v-2h4v6zm4 0h-2v-6h2v6zm-4-10H7v-2h4v2zm2 0h-2v-2h2v2z"/></svg>'; // JS Icon (Simplified)
-                case 'markdown':
-                    return '<svg class="w-4 h-4 text-blue-400 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.018A12.012 12.012 0 0112 20.713 12.013 12.013 0 012.382 7.287m17.636 6.33-4.757-4.757m0 0l-4.757-4.757"/></svg>'; // Checkmark/Doc Icon
-                case 'json':
-                    return '<svg class="w-4 h-4 text-purple-400 mr-2" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h4v2h-4v-2zm-2-8h8v-2h-8v2zm0 4h8v-2h-8v2z"/></svg>'; // Bracket Icon
-                default:
-                    return '<svg class="w-4 h-4 text-gray-400 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>'; // Generic File Icon
+                case 'javascript': return '<svg class="w-4 h-4 text-yellow-400 mr-2 shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-4h-2v-2h4v6zm4 0h-2v-6h2v6zm-4-10H7v-2h4v2zm2 0h-2v-2h2v2z"/></svg>';
+                case 'markdown': return '<svg class="w-4 h-4 text-blue-400 mr-2 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75h-.007M12 12h-.007M12 17.25h-.007M12 21a9 9 0 110-18 9 9 0 010 18z"/></svg>';
+                case 'json': return '<svg class="w-4 h-4 text-purple-400 mr-2 shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h4v2h-4v-2zm-2-8h8v-2h-8v2zm0 4h8v-2h-8v2z"/></svg>';
+                case 'html': return '<svg class="w-4 h-4 text-orange-400 mr-2 shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L6.5 1.75V4.5L12 6.25L17.5 4.5V1.75L12 0zM17.5 7L12 8.75L6.5 7V17L12 18.75L17.5 17V7z"/></svg>';
+                default: return '<svg class="w-4 h-4 text-gray-400 mr-2 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>';
             }
         };
 
         const getFolderIcon = (isOpen) => {
-            return `<svg class="w-4 h-4 text-blue-400 mr-1.5 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''}" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>`;
+            return `<svg class="w-4 h-4 text-blue-400 mr-1.5 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''} shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>`;
         };
 
-        const getFolderNodeIcon = (isOpen) => {
-            return `<svg class="w-4 h-4 text-blue-400 mr-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z"/></svg>`;
+        const getFolderNodeIcon = () => {
+             return `<svg class="w-4 h-4 text-blue-400 mr-2 shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`;
         };
 
         // --- DATA PERSISTENCE (Local Storage) ---
 
         const loadFiles = () => {
             try {
-                const storedFiles = localStorage.getItem(LS_KEY);
-                if (storedFiles) {
-                    files = JSON.parse(storedFiles);
+                const storedData = localStorage.getItem(LS_KEY);
+                if (storedData) {
+                    const data = JSON.parse(storedData);
+                    files = data.files || [];
+                    openTabs = data.openTabs || [];
+                    activeTabId = data.activeTabId || null;
+                    isSecondaryPanelOpen = data.isSecondaryPanelOpen || false;
                 } else {
+                    // Default starter files
+                    const folderId = generateId();
                     files = [
-                        { id: generateId(), name: 'notes', type: 'folder', parentId: null, content: '', isOpen: true },
-                        { id: generateId(), name: 'README.md', type: 'file', parentId: null, content: '# My Local Notes App\n\nThis simple app is built with pure HTML, CSS (Tailwind), and JavaScript for maximum portability. All your data is saved in your browser.', language: 'markdown' },
-                        { id: generateId(), name: 'config.js', type: 'file', parentId: files[0]?.id || null, content: '/* Configuration file example */\nconst port = 3000;\nconst theme = "dark";', language: 'javascript' },
+                        { id: folderId, name: 'notes', type: 'folder', parentId: null, isOpen: true },
+                        { id: generateId(), name: 'README.md', type: 'file', parentId: null, content: '# Welcome to your Notes Clone\n\nThis application is a 100% functional VS Code clone built entirely in a single HTML file. Your notes are saved automatically in your browser\'s Local Storage.\n\n### Features:\n\n* **File Explorer:** Create, rename, and delete files/folders.\n* **Split View:** Click the icon in the status bar to see a live Markdown preview.\n* **Syntax Highlighting:** Supports JS, JSON, and Markdown coloring.', language: 'markdown' },
+                        { id: generateId(), name: 'utility.js', type: 'file', parentId: folderId, content: '// JavaScript Syntax Test\nconst logMessage = (msg) => {\n  // A simple comment\n  if (msg.length > 5) {\n    return msg.toUpperCase();\n  }\n  return 100;\n};\n\nlogMessage("hello world");', language: 'javascript' },
                     ];
+                    openTabs = [files.find(f => f.name === 'README.md').id];
+                    activeTabId = openTabs[0];
                 }
             } catch (e) {
-                console.error("Could not load workspace from local storage:", e);
-                // Fallback: If loading fails, use an empty array or default files.
+                console.error("Could not load workspace:", e);
+                // Simple Fallback
                 files = [];
             }
         };
 
         const saveFiles = () => {
             try {
-                localStorage.setItem(LS_KEY, JSON.stringify(files));
+                const data = {
+                    files,
+                    openTabs,
+                    activeTabId,
+                    isSecondaryPanelOpen,
+                };
+                localStorage.setItem(LS_KEY, JSON.stringify(data));
             } catch (e) {
-                console.error("Could not save workspace to local storage:", e);
+                console.error("Could not save workspace:", e);
             }
         };
 
@@ -258,26 +379,42 @@
             renderActivityBar();
             renderSidebar();
             renderTabs();
-            renderEditor();
+            renderEditorGroup();
             renderStatusBar();
-            saveFiles();
+            // Only save when UI update is triggered (debounced auto-save handles content updates)
         };
 
         const toggleSidebar = (view) => {
-            if (sidebarView === view) {
-                // Toggle off if clicking the active view
-                if ($sidebarPanel.style.width === '0px') {
-                    $sidebarPanel.style.width = 'var(--sidebar-width)';
-                } else {
-                    $sidebarPanel.style.width = '0px';
-                }
+            if (sidebarView === view && isSidebarOpen) {
+                // Toggle sidebar off
+                $sidebarPanel.classList.add('visually-hidden');
+                isSidebarOpen = false;
             } else {
-                // Switch view and ensure open
+                // Toggle sidebar on/switch view
+                $sidebarPanel.classList.remove('visually-hidden');
+                isSidebarOpen = true;
                 sidebarView = view;
-                $sidebarPanel.style.width = 'var(--sidebar-width)';
-                $sidebarTitle.textContent = view.toUpperCase();
             }
             updateUI();
+        };
+        
+        const toggleSecondaryPanel = () => {
+            isSecondaryPanelOpen = !isSecondaryPanelOpen;
+            const activeFile = getFile(activeTabId);
+
+            if (isSecondaryPanelOpen) {
+                $secondaryPanel.classList.remove('visually-hidden');
+                $primaryEditorPanel.style.width = '50%';
+                $secondaryPanel.style.width = '50%';
+            } else {
+                $secondaryPanel.classList.add('visually-hidden');
+                $primaryEditorPanel.style.width = '100%';
+                $secondaryPanel.style.width = '0%';
+            }
+            
+            // Re-render editor content to ensure correct state/preview update
+            renderEditorContent(activeFile);
+            saveFiles(); // Persist panel state
         };
 
         // --- Activity Bar Rendering ---
@@ -292,7 +429,7 @@
 
             const html = activities.map(item => `
                 <div 
-                    class="w-full h-[48px] flex items-center justify-center cursor-pointer border-l-2 ${sidebarView === item.id ? 'border-white text-white' : 'border-transparent text-[#6e6e6e] hover:text-white'}"
+                    class="w-full h-[48px] flex items-center justify-center cursor-pointer border-l-2 ${sidebarView === item.id && isSidebarOpen ? 'border-white text-white' : 'border-transparent text-[#6e6e6e] hover:text-white'}"
                     onclick="toggleSidebar('${item.id}')"
                     title="${item.title}"
                 >
@@ -303,7 +440,7 @@
             $activityBar.innerHTML = html;
         };
 
-        // --- Sidebar Rendering (Explorer) ---
+        // --- Sidebar Rendering (Explorer/Panels) ---
 
         const renderExplorer = () => {
             const rootNodes = files.filter(f => f.parentId === null).sort((a, b) => {
@@ -312,7 +449,7 @@
             });
 
             const renderNode = (node, depth) => {
-                const paddingLeft = depth * 12 + 10;
+                const paddingLeft = depth * 10 + 10;
                 const isActive = activeTabId === node.id;
                 const isFolder = node.type === 'folder';
 
@@ -320,14 +457,14 @@
                 if (isRenaming === node.id) {
                     return `
                         <div style="padding-left: ${paddingLeft}px;" class="flex items-center py-[2px] cursor-pointer">
-                            ${isFolder ? getFolderNodeIcon(node.isOpen) : getFileIcon(node.name)}
+                            ${isFolder ? getFolderNodeIcon() : getFileIcon(node.name)}
                             <input
                                 id="rename-input-${node.id}"
                                 type="text"
                                 value="${node.name}"
                                 class="bg-[#3c3c3c] border border-[#007acc] text-[13px] text-white outline-none px-1 w-2/3"
                                 onblur="handleRename('${node.id}', this.value)"
-                                onkeydown="if(event.key === 'Enter') handleRename('${node.id}', this.value)"
+                                onkeydown="if(event.key === 'Enter') handleRename('${node.id}', this.value); event.stopPropagation();"
                                 autofocus
                             />
                         </div>
@@ -338,18 +475,15 @@
                 // Normal Node View
                 const nodeHtml = `
                     <div 
-                        id="node-${node.id}"
                         style="padding-left: ${paddingLeft}px;" 
                         class="flex items-center py-[2px] cursor-pointer group h-6 text-[13px] leading-6 truncate ${isActive ? 'bg-[#37373d] text-white' : 'text-[#cccccc] hover:bg-[#2a2d2e]'}"
                         data-id="${node.id}"
                         onclick="${isFolder ? `toggleFolder('${node.id}')` : `openFile('${node.id}')`}"
-                        ondblclick="${isFolder ? '' : `openFile('${node.id}')`}"
                     >
-                        <span class="mr-1.5 opacity-80 shrink-0 flex items-center" 
-                              onclick="${isFolder ? '' : `event.stopPropagation()`}">
+                        <span class="mr-1.5 opacity-80 shrink-0 flex items-center" onclick="event.stopPropagation()">
                             ${isFolder ? getFolderIcon(node.isOpen) : getFileIcon(node.name)}
                         </span>
-                        <span class="truncate flex-1" onclick="${isFolder ? 'event.stopPropagation()' : ''}">${node.name}</span>
+                        <span class="truncate flex-1">${node.name}</span>
                         
                         <!-- Action Icons -->
                         <div class="flex space-x-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
@@ -374,60 +508,41 @@
             };
 
             const explorerHtml = `
-                <div>
-                    <div class="group px-4 py-2 flex items-center justify-between hover:bg-[#2a2d2e] cursor-pointer">
-                        <div class="flex items-center text-xs font-bold text-blue-400">
-                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
-                            LOCAL WORKSPACE
-                        </div>
-                        <div class="hidden group-hover:flex space-x-1">
-                            <button id="file-menu-new-folder" title="New Folder" class="hover:text-white" onclick="createFile(null, true); event.stopPropagation()">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2zM12 9v6m-3-3h6"/></svg>
-                            </button>
-                            <button id="file-menu-new-file" title="New File" class="hover:text-white" onclick="createFile(null, false); event.stopPropagation()">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2zM12 18v-6m3 3h-6"/></svg>
-                            </button>
-                        </div>
-                    </div>
-                    <div class="mt-1">
-                        ${rootNodes.map(node => renderNode(node, 1)).join('')}
-                    </div>
+                <div class="mt-1">
+                    <div class="px-4 py-2 text-xs font-bold text-blue-400 border-b border-[#303030]">LOCAL WORKSPACE</div>
+                    ${rootNodes.map(node => renderNode(node, 1)).join('')}
                 </div>
             `;
             $sidebarContent.innerHTML = explorerHtml;
         };
 
-        const renderSettings = () => {
+        const renderOtherPanel = (title, message) => {
+            $sidebarTitle.textContent = title;
             $sidebarContent.innerHTML = `
                 <div class="p-4 text-sm space-y-4">
-                    <div class="font-bold border-b border-gray-700 pb-2 text-white">Editor Settings (Mock)</div>
-                    <p class="text-gray-400">This view is currently a placeholder to simulate the VS Code UI.</p>
-                    <p class="text-gray-400">All data is saved locally in your browser's LocalStorage.</p>
-                    <button class="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-700 transition-colors" onclick="clearAllData()">Clear All Local Data</button>
+                    <div class="font-bold border-b border-gray-700 pb-2 text-white">${title}</div>
+                    <p class="text-gray-400">${message}</p>
+                    ${title === 'SETTINGS' ? `<button class="bg-red-600 text-white px-3 py-1 rounded-sm hover:bg-red-700 transition-colors" onclick="clearAllData()">Clear All Local Data</button>` : ''}
                 </div>
             `;
         };
-        
-        const renderSidebar = () => {
-             if ($sidebarPanel.style.width === '0px') return;
 
-             $sidebarTitle.textContent = sidebarView.toUpperCase();
+        const renderSidebar = () => {
+             if (!isSidebarOpen) return;
+             
              switch(sidebarView) {
                  case 'explorer':
+                    $sidebarTitle.textContent = 'EXPLORER';
                     renderExplorer();
                     break;
-                 case 'settings':
-                    renderSettings();
-                    break;
                  case 'search':
-                    // Simple Search Placeholder
-                    $sidebarContent.innerHTML = `<div class="p-4 text-sm text-gray-400">
-                        <input type="text" placeholder="Search files (Not implemented)" class="w-full bg-[#3c3c3c] border border-[#007acc] text-white px-2 py-1 rounded focus:outline-none"/>
-                        <p class="mt-4">Search functionality is not implemented in this simple clone.</p>
-                    </div>`;
+                    renderOtherPanel('SEARCH', 'Full-text search is not available in this single-file clone. This panel is purely for UI fidelity.');
                     break;
                  case 'git':
-                    $sidebarContent.innerHTML = `<div class="p-4 text-sm text-gray-400">Source control functionality is not implemented in this simple clone.</div>`;
+                    renderOtherPanel('SOURCE CONTROL', 'Git integration is not available. This panel is purely for UI fidelity.');
+                    break;
+                 case 'settings':
+                    renderOtherPanel('SETTINGS', 'This panel simulates the Settings view. All data is saved automatically and locally in your browser.');
                     break;
              }
         };
@@ -435,6 +550,9 @@
         // --- Tab Rendering ---
 
         const renderTabs = () => {
+            // Filter out files that might have been deleted but were still in openTabs array
+            openTabs = openTabs.filter(id => getFile(id));
+
             const html = openTabs.map(id => {
                 const file = getFile(id);
                 if (!file) return '';
@@ -444,13 +562,13 @@
                 
                 return `
                     <div 
-                        class="group flex items-center min-w-[120px] max-w-[200px] h-[35px] px-3 text-[13px] border-r border-[#1e1e1e] cursor-pointer shrink-0 transition-colors duration-150
-                        ${isActive ? 'bg-[var(--editor-bg)] text-white border-t-2 border-t-[var(--active-color)]' : 'bg-[#2d2d2d] text-[#969696] hover:bg-[#383838] border-t-2 border-t-transparent'}"
+                        class="group flex items-center h-[35px] px-3 text-[13px] border-r border-[#1e1e1e] cursor-pointer shrink-0 transition-colors duration-150"
+                        style="min-width: 120px; max-width: 200px; ${isActive ? 'background-color: var(--editor-bg); color: white; border-top: 2px solid var(--active-color); padding-top: 2px;' : 'background-color: #2d2d2d; color: #969696; border-top: 2px solid transparent; padding-top: 2px; hover:bg-[#383838]'}"
                         onclick="setActiveTab('${id}')"
                     >
                         ${getFileIcon(file.name)}
                         <span class="truncate flex-1">${file.name}</span>
-                        ${isDirty ? `<div class="h-2 w-2 rounded-full bg-[#969696] mx-2"></div>` : ''}
+                        ${isDirty ? `<div class="h-2 w-2 rounded-full bg-white mx-2"></div>` : ''}
                         <button 
                             class="ml-2 p-[2px] rounded-md hover:bg-[#4a4a4a] transition-opacity ${isActive || !isDirty ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
                             onclick="closeTab('${id}'); event.stopPropagation()"
@@ -463,50 +581,67 @@
             }).join('');
             $tabsHeader.innerHTML = html;
         };
+        
+        // --- Editor Content & Preview Rendering ---
 
-        // --- Editor Rendering ---
+        const renderEditorContent = (activeFile) => {
+            if (!activeFile) return;
 
-        const renderEditor = () => {
-            const activeFile = getFile(activeTabId);
-
-            if (!activeFile) {
-                $welcomeMessage.style.opacity = '1';
-                $welcomeMessage.classList.remove('hidden');
-                $editorWrapper.classList.add('hidden');
-                $titleBar.textContent = 'VS Code Clone - Welcome';
-                return;
-            }
-
-            $welcomeMessage.style.opacity = '0';
-            $welcomeMessage.classList.add('hidden');
-            $editorWrapper.classList.remove('hidden');
-
-            $titleBar.textContent = `VS Code Clone - ${activeFile.name}${isFileDirty ? ' *' : ''}`;
-
-            // Set content, attach listeners, and update language status
-            $mainEditor.value = activeFile.content;
-            $statusBarLang.textContent = activeFile.language.toUpperCase();
-            
-            // Breadcrumbs update
+            // 1. Update Breadcrumbs and Status Bar
             $editorBreadcrumbs.innerHTML = `
                  <span>local-storage</span>
                  <svg class="w-3 h-3 mx-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
                  <span class="text-white">${activeFile.name}</span>
             `;
-
-            // Initial rendering of line numbers and syntax
+            $statusBarLang.textContent = activeFile.language.toUpperCase();
+            
+            // 2. Load Content and Sync UI
+            $mainEditor.value = activeFile.content;
             updateLineNumbers();
             updateSyntaxOverlay();
-            updateStatusBar();
-            updateDirtyState(isFileDirty);
+            updateStatusBar(activeFile.name); // Updates line/col and title bar
+
+            // 3. Handle Preview Panel (Markdown only)
+            const isMarkdown = activeFile.language === 'markdown';
+            $togglePreviewBtn.classList.toggle('visually-hidden', !isMarkdown);
+            
+            if (isMarkdown && isSecondaryPanelOpen) {
+                // If the panel is open AND it's markdown, render preview
+                renderMarkdownPreview(activeFile.content);
+                $secondaryPanel.classList.remove('visually-hidden');
+            } else {
+                // Otherwise, hide the secondary panel visually (even if isSecondaryPanelOpen is true, because the file isn't markdown)
+                $secondaryPanel.classList.add('visually-hidden');
+                // Ensure primary panel is full width if secondary is logically hidden
+                $primaryEditorPanel.style.width = '100%';
+                $secondaryPanel.style.width = '0%';
+            }
         };
 
-        // --- Status Bar Rendering ---
+        const renderEditorGroup = () => {
+            const activeFile = getFile(activeTabId);
+
+            if (!activeFile) {
+                $welcomeMessage.classList.remove('visually-hidden');
+                $editorGroupWrapper.classList.add('visually-hidden');
+                $editorBreadcrumbs.classList.add('visually-hidden');
+                $titleBar.textContent = 'Notes App | Local Storage [Workspace]';
+                $togglePreviewBtn.classList.add('visually-hidden');
+                return;
+            }
+
+            $welcomeMessage.classList.add('visually-hidden');
+            $editorGroupWrapper.classList.remove('visually-hidden');
+            $editorBreadcrumbs.classList.remove('visually-hidden');
+            
+            renderEditorContent(activeFile);
+        };
 
         const renderStatusBar = () => {
             const activeFile = getFile(activeTabId);
             if (activeFile) {
                  $statusBarLang.textContent = activeFile.language.toUpperCase();
+                 // Other status bar elements are updated on input/click
             } else {
                  $statusBarLang.textContent = 'TEXT';
                  $statusBarLineCol.textContent = 'Ln 1, Col 1';
@@ -517,13 +652,13 @@
 
         const createFile = (parentId, isFolder) => {
             const id = generateId();
-            const name = isFolder ? 'New Folder' : `untitled-${files.length}.txt`;
+            const name = isFolder ? 'New Folder' : `untitled-${files.length}.md`; // Default to Markdown
             const newNode = { 
                 id, 
                 name, 
                 type: isFolder ? 'folder' : 'file', 
                 parentId, 
-                content: isFolder ? '' : `// New ${name} file`, 
+                content: isFolder ? '' : `# ${name}`, 
                 isOpen: true,
                 language: getLanguageFromExt(name),
             };
@@ -542,6 +677,7 @@
                     input.select();
                 }
             }, 50);
+            saveFiles();
         };
 
         const toggleFolder = (id) => {
@@ -550,39 +686,37 @@
                 file.isOpen = !file.isOpen;
                 updateUI();
             }
+            saveFiles();
         };
 
+        const setActiveTab = (id) => {
+            if (activeTabId === id) return;
+            activeTabId = id;
+            isFileDirty = false; // Reset dirty state when switching
+            updateUI();
+            saveFiles();
+        };
+        
         const openFile = (id) => {
             const file = getFile(id);
             if (file && file.type === 'file') {
                 if (!openTabs.includes(id)) {
                     openTabs.push(id);
                 }
-                activeTabId = id;
-                isFileDirty = false; // Assume clean when opening
-                updateUI();
+                setActiveTab(id);
             }
         };
 
         const closeTab = (id) => {
             openTabs = openTabs.filter(tabId => tabId !== id);
             if (activeTabId === id) {
-                // Switch to the last tab if closing the active one
                 activeTabId = openTabs.length > 0 ? openTabs[openTabs.length - 1] : null;
+                isFileDirty = false; // Must be clean when closing last tab
             }
             updateUI();
+            saveFiles();
         };
-
-        const updateFileContent = () => {
-            const file = getFile(activeTabId);
-            if (file) {
-                file.content = $mainEditor.value;
-                updateDirtyState(true); // Mark as dirty immediately on input
-                updateUI();
-                // Debounce save is handled by event listener
-            }
-        };
-
+        
         const startRename = (id) => {
             isRenaming = id;
             updateUI();
@@ -592,7 +726,7 @@
                     input.focus();
                     const lastDot = input.value.lastIndexOf('.');
                     if (lastDot > 0 && getFile(id).type === 'file') {
-                        input.setSelectionRange(0, lastDot); // Select name, not extension
+                        input.setSelectionRange(0, lastDot);
                     } else {
                         input.select();
                     }
@@ -610,18 +744,12 @@
             }
             isRenaming = null;
             updateUI();
+            saveFiles();
         };
 
         const deleteFile = (id) => {
-            // Simple modal replacement
-            const file = getFile(id);
-            if (!file) return;
+            if (!window.confirm("Are you sure you want to delete this item and its contents?")) return;
 
-            if (!window.confirm(`Are you sure you want to delete "${file.name}"?`)) {
-                return;
-            }
-
-            // Recursively collect IDs to delete
             const idsToDelete = [id];
             const getChildren = (parentId) => {
                 files.filter(f => f.parentId === parentId).forEach(f => {
@@ -629,29 +757,27 @@
                     if (f.type === 'folder') getChildren(f.id);
                 });
             };
-            if (file.type === 'folder') {
+            const file = getFile(id);
+            if (file && file.type === 'folder') {
                 getChildren(id);
             }
             
-            // Remove files from the array
             files = files.filter(f => !idsToDelete.includes(f.id));
-
-            // Close any deleted files/tabs
             openTabs = openTabs.filter(tabId => !idsToDelete.includes(tabId));
+            
             if (idsToDelete.includes(activeTabId)) {
                 activeTabId = openTabs.length > 0 ? openTabs[openTabs.length - 1] : null;
+                isFileDirty = false;
             }
 
             updateUI();
+            saveFiles();
         };
         
         const clearAllData = () => {
             if (window.confirm("WARNING: This will permanently delete ALL your notes from this browser. Are you sure?")) {
                 localStorage.removeItem(LS_KEY);
-                files = [];
-                openTabs = [];
-                activeTabId = null;
-                alertMessage('All local data cleared. Reloading page.');
+                alert('All local data cleared. Reloading page.');
                 setTimeout(() => window.location.reload(), 1500);
             }
         };
@@ -661,85 +787,194 @@
         const updateDirtyState = (dirty) => {
             isFileDirty = dirty;
             $unsavedIndicator.classList.toggle('opacity-0', !dirty);
-            $titleBar.textContent = `VS Code Clone - ${getFile(activeTabId)?.name || 'Welcome'}${isFileDirty ? ' *' : ''}`;
-            if (!dirty) saveFiles(); // Auto-save on clean/debounce end
+            const activeFile = getFile(activeTabId);
+            $titleBar.textContent = `Notes App | ${activeFile?.name || 'Welcome'}${isFileDirty ? ' *' : ''}`;
+            
+            // Re-render tabs to update the unsaved dot
+            renderTabs();
         };
-
-        // Editor Scroll and Content Sync
-        const handleEditorScroll = () => {
-            $lineNumbers.scrollTop = $mainEditor.scrollTop;
-            $syntaxOverlay.scrollTop = $mainEditor.scrollTop;
+        
+        const updateFileContent = (content) => {
+            const file = getFile(activeTabId);
+            if (file && file.content !== content) {
+                file.content = content;
+                updateDirtyState(true); // Mark as dirty
+            }
         };
 
         const updateLineNumbers = () => {
             const content = $mainEditor.value;
+            // +1 to account for cursor being placed on an empty newline
             const lineCount = content.split('\n').length;
-            const linesHtml = Array.from({ length: lineCount }, (_, i) => `<div>${i + 1}</div>`).join('');
+            const linesHtml = Array.from({ length: lineCount + 1 }, (_, i) => `<div>${i + 1}</div>`).join('');
             $lineNumbers.innerHTML = linesHtml;
         };
-
-        const updateStatusBar = () => {
+        
+        const updateStatusBar = (fileName) => {
             const cursorStart = $mainEditor.selectionStart;
             const content = $mainEditor.value.substring(0, cursorStart);
             const line = content.split('\n').length;
             const column = cursorStart - content.lastIndexOf('\n') + (content.lastIndexOf('\n') === -1 ? 1 : 0);
             
             $statusBarLineCol.textContent = `Ln ${line}, Col ${column}`;
+            $titleBar.textContent = `Notes App | ${fileName}${isFileDirty ? ' *' : ''}`;
+        };
+        
+        const handleEditorScroll = () => {
+            // Synchronize scrolling between editor elements
+            $lineNumbers.scrollTop = $mainEditor.scrollTop;
+            $syntaxOverlay.scrollTop = $mainEditor.scrollTop;
         };
 
-        // Simplified Syntax Highlighter (Purely visual overlay)
-        const syntaxHighlight = (code, lang) => {
-            if (!code) return '';
-            let html = code
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;');
+        // --- SYNTAX HIGHLIGHTING (Custom Tokenizer) ---
+        
+        const tokenize = (code, lang) => {
+            let tokens = [];
+            let pos = 0;
+            const regexes = {
+                javascript: [
+                    { type: 'comment', pattern: /(\/\/.*|\/\*[\s\S]*?\*\/)/y, color: '#6a9955' },
+                    { type: 'string', pattern: /(["'`])(?:\\.|[^\\\n])*?\1/y, color: '#ce9178' },
+                    { type: 'keyword', pattern: /\b(const|let|var|function|return|class|if|else|switch|case|break|for|while|try|catch|async|await|this|null|undefined|new|import|export|from)\b/y, color: '#569cd6' },
+                    { type: 'number', pattern: /\b\d+(\.\d+)?\b/y, color: '#b5cea8' },
+                    { type: 'punctuation', pattern: /[\{\}\[\]\(\);,.:=\-+\*/]/y, color: '#d4d4d4' },
+                    { type: 'variable', pattern: /\b[a-zA-Z_$][\w$]*\b/y, color: '#9cdcfe' },
+                ],
+                markdown: [
+                    { type: 'bold', pattern: /(\*\*|__)(.*?)\1/y, color: '#d7ba7d' },
+                    { type: 'italic', pattern: /(\*|_)(.*?)\1/y, color: '#c8c8c8', fontStyle: 'italic' },
+                    { type: 'header', pattern: /^(#+)(.*)/ym, color: '#569cd6' },
+                    { type: 'link', pattern: /(\[.*?\]\s*\(.*?\))/y, color: '#4ec9b0' },
+                    { type: 'list', pattern: /^(\s*[\*-]\s+)/ym, color: '#d7ba7d' },
+                ],
+                plaintext: [], // No highlighting
+            };
 
-            if (lang === 'javascript' || lang === 'json') {
-                // Keywords
-                html = html.replace(/\b(const|let|var|function|return|class|if|else|switch|case|break|for|while|try|catch|async|await|this|null|undefined)\b/g, '<span style="color: #569cd6;">$1</span>');
-                // Strings
-                html = html.replace(/(['"`])(.*?)\1/g, '<span style="color: #ce9178;">$1$2$1</span>');
-                // Numbers/Booleans
-                html = html.replace(/\b(true|false)\b/g, '<span style="color: #569cd6;">$1</span>');
-                html = html.replace(/\b(\d+)\b/g, '<span style="color: #b5cea8;">$1</span>');
-                // Comments
-                html = html.replace(/(\/\/.*)/g, '<span style="color: #6a9955;">$1</span>');
-            } else if (lang === 'markdown') {
-                // Headers
-                html = html.replace(/^(#+)(.*)/gm, '<span style="color: #569cd6; font-weight: bold;">$1$2</span>');
-                // Bold
-                html = html.replace(/\*\*(.*?)\*\*/g, '<span style="font-weight: bold; color: #dcdcaa;">$1</span>');
-            }
+            const langRegexes = regexes[lang] || regexes['plaintext'];
             
-            // Preserve spaces and newlines
+            while (pos < code.length) {
+                let match = null;
+                let matchedRegex = null;
+
+                for (const { type, pattern } of langRegexes) {
+                    pattern.lastIndex = pos;
+                    const currentMatch = pattern.exec(code);
+                    if (currentMatch && currentMatch.index === pos) {
+                        match = currentMatch;
+                        matchedRegex = type;
+                        break;
+                    }
+                }
+
+                if (match) {
+                    const value = match[0];
+                    tokens.push({ type: matchedRegex, value: value });
+                    pos += value.length;
+                } else {
+                    // Capture non-tokenized text
+                    let nextPos = pos + 1;
+                    while (nextPos < code.length) {
+                        let isTokenStart = false;
+                        for (const { pattern } of langRegexes) {
+                            pattern.lastIndex = nextPos;
+                            if (pattern.exec(code) && pattern.exec(code).index === nextPos) {
+                                isTokenStart = true;
+                                break;
+                            }
+                        }
+                        if (isTokenStart) break;
+                        nextPos++;
+                    }
+
+                    const value = code.substring(pos, nextPos);
+                    tokens.push({ type: 'text', value: value });
+                    pos = nextPos;
+                }
+            }
+
+            return tokens;
+        };
+
+        const highlightCode = (code, lang) => {
+            if (!code) return '';
+            const tokens = tokenize(code, lang);
+
+            let html = '';
+            tokens.forEach(token => {
+                let value = token.value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                if (token.type !== 'text' && token.type !== 'variable' && token.type !== 'punctuation') {
+                    // For keywords, strings, comments, etc., wrap them in span
+                    html += `<span class="token ${token.type}">${value}</span>`;
+                } else if (token.type === 'variable' && lang === 'javascript') {
+                    // Simple variable highlighting
+                    html += `<span class="token variable">${value}</span>`;
+                } else {
+                    html += value; // Render plain text
+                }
+            });
+            
+            // Render spaces as non-breaking to preserve alignment
             html = html.replace(/ /g, '&nbsp;'); 
             return html;
         };
-        
+
         const updateSyntaxOverlay = () => {
             const activeFile = getFile(activeTabId);
             if (!activeFile) return;
-            const highlightedHtml = syntaxHighlight($mainEditor.value, activeFile.language);
+            const highlightedHtml = highlightCode($mainEditor.value, activeFile.language);
             $syntaxOverlay.innerHTML = highlightedHtml;
-            // The overlay must have the same line-height and font properties as the textarea
-            $syntaxOverlay.className = $mainEditor.className.replace('text-[#d4d4d4]', 'text-transparent') + ' absolute inset-0 m-0 pt-1 px-2 pointer-events-none select-none leading-5 mono-font';
         };
 
-        let debounceTimer;
+        // --- MARKDOWN PREVIEW (Simple Markdown-to-HTML) ---
+        
+        const renderMarkdownPreview = (markdown) => {
+            let html = markdown
+                .replace(/^#\s*(.*)$/gm, '<h1>$1</h1>') // H1
+                .replace(/^##\s*(.*)$/gm, '<h2>$1</h2>') // H2
+                .replace(/^###\s*(.*)$/gm, '<h3>$1</h3>') // H3
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+                .replace(/\*(.*?)\*/g, '<em>$1</em>') // Italic
+                .replace(/`(.*?)`/g, '<code>$1</code>'); // Inline Code
+
+            // Simple Unordered List
+            html = html.replace(/^[\*-]\s*(.*)$/gm, '<li>$1</li>');
+            if (html.includes('<li>')) {
+                html = '<ul>' + html.split('<ul>').join('</ul><ul>') + '</ul>';
+                html = html.replace(/<\/ul><ul>/g, '').replace(/^<ul>|<\/ul>$/g, '');
+            }
+            
+            // Simple Paragraphs (wrapping remaining text that isn't already a block)
+            html = html.split('\n\n').map(block => {
+                if (!block.startsWith('<h') && !block.startsWith('<ul>') && block.trim() !== '') {
+                    return `<p>${block}</p>`;
+                }
+                return block;
+            }).join('');
+            
+            $markdownPreviewContent.innerHTML = html;
+        };
+        
+        // --- Event Handlers ---
+        
         const handleEditorInput = (e) => {
             if (!activeTabId) return;
             
-            updateFileContent();
+            const content = $mainEditor.value;
+            updateFileContent(content);
             updateLineNumbers();
             updateSyntaxOverlay();
-            updateStatusBar();
+            updateStatusBar(getFile(activeTabId).name);
 
-            // Debounce the setting of the dirty state to false (auto-save)
-            clearTimeout(debounceTimer);
-            debounceTimer = setTimeout(() => {
-                updateDirtyState(false); // Mark clean/saved
-            }, 500);
+            if (getFile(activeTabId).language === 'markdown' && isSecondaryPanelOpen) {
+                renderMarkdownPreview(content);
+            }
+
+            // Debounce Auto-Save
+            clearTimeout(saveTimer);
+            saveTimer = setTimeout(() => {
+                updateDirtyState(false); // Auto-save done, mark clean
+                saveFiles(); // Perform the actual save
+            }, AUTO_SAVE_DELAY);
         };
         
         const handleTabKey = (e) => {
@@ -758,16 +993,24 @@
                 $mainEditor.selectionStart = $mainEditor.selectionEnd = start + tabSpace.length;
             }
         };
-        
+
         // --- Initialization ---
 
         document.addEventListener('DOMContentLoaded', () => {
             loadFiles();
             
-            // Auto-open the first file if none are open
-            if (files.length > 0 && !openTabs.length) {
-                const firstFile = files.find(f => f.type === 'file');
-                if (firstFile) openFile(firstFile.id);
+            // Ensure sidebar state is respected
+            if (!isSidebarOpen) {
+                $sidebarPanel.classList.add('visually-hidden');
+            } else {
+                 $sidebarPanel.classList.remove('visually-hidden');
+            }
+
+            // Ensure secondary panel state is respected
+            if (isSecondaryPanelOpen) {
+                 $secondaryPanel.classList.remove('visually-hidden');
+            } else {
+                 $secondaryPanel.classList.add('visually-hidden');
             }
             
             updateUI();
@@ -775,21 +1018,10 @@
             // Set up main editor listeners
             $mainEditor.addEventListener('input', handleEditorInput);
             $mainEditor.addEventListener('scroll', handleEditorScroll);
-            $mainEditor.addEventListener('keyup', updateStatusBar);
+            $mainEditor.addEventListener('keyup', (e) => updateStatusBar(getFile(activeTabId)?.name || ''));
+            $mainEditor.addEventListener('click', (e) => updateStatusBar(getFile(activeTabId)?.name || ''));
             $mainEditor.addEventListener('keydown', handleTabKey);
-            $mainEditor.addEventListener('click', updateStatusBar);
         });
-
-        // Simple alert replacement for deletion
-        const alertMessage = (message) => {
-            const alertBox = document.createElement('div');
-            alertBox.className = 'fixed top-4 right-4 bg-yellow-600 text-white p-3 rounded-lg shadow-xl z-[9999]';
-            alertBox.textContent = message;
-            document.body.appendChild(alertBox);
-            setTimeout(() => {
-                alertBox.remove();
-            }, 3000);
-        };
         
     </script>
 </body>
