@@ -39,6 +39,10 @@
     <!-- Load JSZip Library for file compression/download -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
+        /*  keep textarea inside the pixel box that is really left  */
+#primary-editor-panel {
+  min-width: 0;        /*  allow flex-child to shrink below content size  */
+}
         /* VS Code Dark Theme Colors */
         :root {
             --editor-bg: #1e1e1e;
@@ -540,6 +544,9 @@
                 $primaryEditorPanel.style.width = '100%';
                 $secondaryPanel.style.width = '0%';
             }
+            /*  force textarea to re-flow inside the new pixel width  */
+$mainEditor.style.width = $primaryEditorPanel.clientWidth + 'px';
+$mainEditor.dispatchEvent(new Event('input'));   // re-trigger wrap calculation
             
             renderEditorContent(activeFile);
             saveFiles();
