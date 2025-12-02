@@ -246,7 +246,15 @@
                                 <li>**If you clear your browser data or switch devices:** Your notes will be lost, as there is no cloud backup.</li>
                             </ul>
                         </div>
-                        <p class="text-[var(--text-color)] text-sm">Click the <span class="text-[var(--active-color)]">New Note</span> icon or <span class="text-[var(--active-color)]">Import Note</span> to begin.</p>
+                        <!-- FIX APPLIED HERE: Added onclick and welcome-link class to spans -->
+
+                        <p class="text-[var(--text-color)] text-sm">Click the 
+
+                            <span class="text-[var(--active-color)] welcome-link" onclick="createFile()">New Note</span> icon or 
+
+                            <span class="text-[var(--active-color)] welcome-link" onclick="document.getElementById('file-input').click();">Import Note</span> to begin.
+
+                        </p>
                         <button onclick="createFile();" class="mt-4 bg-[#007acc] text-white px-4 py-1 rounded-sm hover:bg-[#006bbd] transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-white" aria-label="Start Notetaking: Create new note">Start Notetaking</button>
                     </div>
                 </div>
