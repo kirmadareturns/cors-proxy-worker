@@ -3,9 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VS Code Notes Clone (Refined)</title>
+    <title>VS Code Notes Clone (Notes Only)</title>
     <!-- Load Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load JSZip Library for file compression/download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
     <style>
         /* VS Code Dark Theme Colors */
         :root {
@@ -32,7 +34,7 @@
         .mono-font {
             font-family: Consolas, 'Courier New', monospace;
             font-size: 14px;
-            line-height: 20px; /* 1.428em for 14px */
+            line-height: 20px; 
         }
 
         /* Custom Scrollbar (VS Code style) */
@@ -48,21 +50,33 @@
             background-color: transparent;
         }
 
-        /* Editor Area Setup */
+        /* Editor Area Setup: Ensures perfect alignment for highlighting */
+        .editor-container {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            right: 0;
+            left: 58px; /* 48px (line number width) + 10px (line number right padding) */
+            padding: 4px 10px 4px 10px; /* Add internal padding for text area */
+            box-sizing: border-box;
+            line-height: 20px;
+            tab-size: 2;
+        }
+
         .editor-textarea, .editor-overlay {
             position: absolute;
             inset: 0;
             width: 100%;
             height: 100%;
-            padding: 4px 10px 4px 0; /* Padding left is handled by line numbers */
+            padding: 0; /* Padding is handled by .editor-container */
             margin: 0;
             white-space: pre-wrap;
             word-wrap: break-word;
             border: none;
             outline: none;
             box-sizing: border-box;
-            line-height: 20px;
-            tab-size: 2;
+            line-height: inherit;
+            tab-size: inherit;
         }
 
         .editor-textarea {
@@ -76,7 +90,7 @@
         .editor-overlay {
             pointer-events: none;
             z-index: 5;
-            color: transparent; /* Text must be transparent, spans color it */
+            color: transparent; 
         }
         
         .line-numbers {
@@ -93,20 +107,20 @@
         }
 
         /* Syntax Highlighting Colors */
-        .token.keyword { color: #569cd6; } 
-        .token.string { color: #ce9178; } 
-        .token.comment { color: #6a9955; } 
-        .token.number { color: #b5cea8; } 
-        .token.punctuation { color: #d4d4d4; } 
-        .token.variable { color: #9cdcfe; } 
-        .token.tag, .token.selector, .token.header, .token.list { color: #d7ba7d; }
+        .token.keyword { color: #569cd6; } /* Blue */
+        .token.string { color: #ce9178; } /* Orange */
+        .token.comment { color: #6a9955; } /* Green */
+        .token.number { color: #b5cea8; } /* Light Green */
+        .token.punctuation { color: #d4d4d4; } /* White/Grey */
+        .token.variable { color: #9cdcfe; } /* Light Blue */
+        .token.tag, .token.selector, .token.header, .token.list { color: #d7ba7d; } /* Yellow */
         .token.bold { font-weight: bold; color: #ffd700; }
         .token.italic { font-style: italic; color: #c8c8c8; }
         .token.link { color: #4ec9b0; text-decoration: underline; }
 
         /* Secondary Panel Styling (Markdown Preview) */
         #secondary-panel {
-            background-color: #f3f3f3; /* Light background for reading */
+            background-color: #f3f3f3; 
             color: #333333;
             padding: 20px;
             font-size: 14px;
@@ -124,6 +138,9 @@
             padding: 2px 4px;
             border-radius: 3px;
         }
+        #secondary-panel p {
+            margin-bottom: 1em;
+        }
 
         /* Hidden Class for Layout Toggling */
         .visually-hidden {
@@ -133,56 +150,63 @@
 </head>
 <body class="flex flex-col">
 
-    <!-- 1. TOP TITLE BAR (Simplified macOS style for aesthetics) -->
-    <div class="h-[30px] w-full bg-slate-900 flex items-center justify-between px-2 text-[12px] border-b border-[#2b2b2b] shadow-lg shrink-0">
-        <div class="flex space-x-2 ml-2">
-            <div class="h-3 w-3 rounded-full bg-red-500 hover:scale-110 transition-transform cursor-pointer" title="Close Window"></div>
-            <div class="h-3 w-3 rounded-full bg-yellow-500 hover:scale-110 transition-transform cursor-pointer" title="Minimize Window"></div>
-            <div class="h-3 w-3 rounded-full bg-green-500 hover:scale-110 transition-transform cursor-pointer" title="Maximize Window"></div>
+    <!-- 1. TOP TITLE BAR -->
+    <div role="banner" class="h-[30px] w-full bg-slate-900 flex items-center justify-between px-2 text-[12px] border-b border-[#2b2b2b] shadow-lg shrink-0">
+        <div class="flex space-x-2 ml-2" aria-label="Window Controls">
+            <div class="h-3 w-3 rounded-full bg-red-500 hover:scale-110 transition-transform cursor-pointer" title="Close Window" role="button" tabindex="0"></div>
+            <div class="h-3 w-3 rounded-full bg-yellow-500 hover:scale-110 transition-transform cursor-pointer" title="Minimize Window" role="button" tabindex="0"></div>
+            <div class="h-3 w-3 rounded-full bg-green-500 hover:scale-110 transition-transform cursor-pointer" title="Maximize Window" role="button" tabindex="0"></div>
         </div>
         <div id="title-bar" class="text-white font-medium text-sm">Notes App | Local Storage [Workspace]</div>
-        <div class="flex space-x-4 mr-2 text-[#999]">
-            <span class="hover:text-white px-1 rounded cursor-default">Help</span>
-        </div>
+        <!-- Removed Help link as requested -->
+        <div class="w-16"></div> 
     </div>
 
     <!-- 2. MAIN LAYOUT (Activity Bar + Sidebar + Editor) -->
-    <div class="flex flex-1 overflow-hidden">
+    <div class="flex flex-1 overflow-hidden" role="main">
         
         <!-- ACTIVITY BAR -->
-        <div id="activity-bar" class="w-[48px] bg-[var(--activity-bg)] flex flex-col items-center py-2 space-y-2 border-r border-[#2b2b2b] shrink-0">
+        <div id="activity-bar" class="w-[48px] bg-[var(--activity-bg)] flex flex-col items-center py-2 space-y-2 border-r border-[#2b2b2b] shrink-0" role="navigation" aria-label="Activity Bar">
             <!-- Explorer Icon (Always Active/Visible) -->
-            <div 
-                class="w-full h-[48px] flex items-center justify-center cursor-pointer border-l-2 border-white text-white"
-                title="Explorer"
+            <button 
+                class="w-full h-[48px] flex items-center justify-center cursor-pointer border-l-2 border-white text-white focus:outline-none focus:ring-2 focus:ring-[var(--active-color)]"
+                title="Notes Explorer"
+                aria-label="Notes Explorer"
             >
                 <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                     <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2zm0 2v12h16V6H4zM6 8h4v8H6V8z"/>
                 </svg>
-            </div>
+            </button>
         </div>
 
-        <!-- SIDEBAR PANEL (Always Open, always Explorer) -->
-        <div id="sidebar-panel" class="w-[280px] bg-[var(--sidebar-bg)] flex flex-col border-r border-[#1e1e1e] shrink-0 transition-all duration-200">
+        <!-- SIDEBAR PANEL (Notes List) -->
+        <div id="sidebar-panel" class="w-[280px] bg-[var(--sidebar-bg)] flex flex-col border-r border-[#1e1e1e] shrink-0 transition-all duration-200" role="complementary" aria-label="Notes List">
             
             <!-- Sidebar Header -->
             <div id="sidebar-header" class="h-[35px] flex items-center justify-between px-4 text-[11px] font-bold tracking-wide uppercase text-[#bbbbbb] mt-2 border-b border-[#303030] shrink-0">
-                <span id="sidebar-title">EXPLORER</span>
+                <span id="sidebar-title">NOTES</span>
                 <div id="sidebar-actions" class="text-gray-400 flex space-x-2">
-                    <!-- New File - calls createFile with parentId=null (root) -->
-                    <button onclick="createFile(null, false);" title="New File" class="hover:text-white">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2zM12 18v-6m3 3h-6"/></svg>
+                    <!-- Download All Notes Button -->
+                    <button onclick="downloadAllFiles()" title="Download All Notes as ZIP" aria-label="Download All Notes as ZIP" class="hover:text-green-400 focus:outline-none focus:ring-2 focus:ring-green-400 rounded">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
                     </button>
-                    <!-- New Folder - calls createFile with parentId=null (root) -->
-                    <button onclick="createFile(null, true);" title="New Folder" class="hover:text-white">
-                         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2zM12 9v6m-3-3h6"/></svg>
+                    <!-- Import Notes Button -->
+                    <button onclick="document.getElementById('file-input').click();" title="Import Note (TXT, MD, JS, etc.)" aria-label="Import Note" class="hover:text-white focus:outline-none focus:ring-2 focus:ring-[var(--active-color)] rounded">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.75a3 3 0 00-3-3h-9a3 3 0 00-3 3v2.75m18-2.75l-4.72-4.72a3 3 0 00-4.24 0l-4.72 4.72M21 14.25v5.75a2 2 0 01-2 2H5a2 2 0 01-2-2v-5.75"/></svg>
+                    </button>
+                    <!-- Hidden File Input for Import -->
+                    <input type="file" id="file-input" class="visually-hidden" onchange="importFile(this.files[0])" accept=".txt,.md,.js,.json,.html">
+                    
+                    <!-- New File -->
+                    <button onclick="createFile();" title="New Note (Default: Markdown)" aria-label="New Note" class="hover:text-white focus:outline-none focus:ring-2 focus:ring-[var(--active-color)] rounded">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2zM12 18v-6m3 3h-6"/></svg>
                     </button>
                 </div>
             </div>
 
             <!-- SIDEBAR CONTENT -->
-            <div id="sidebar-content" class="flex-1 custom-scrollbar overflow-y-auto overflow-x-hidden">
-                <!-- Explorer Content injected here -->
+            <div id="sidebar-content" class="flex-1 custom-scrollbar overflow-y-auto overflow-x-hidden" role="list">
+                <!-- Notes List injected here -->
             </div>
         </div>
 
@@ -190,7 +214,7 @@
         <div id="editor-area" class="flex-1 flex flex-col bg-[var(--editor-bg)] overflow-hidden">
           
             <!-- TABS HEADER -->
-            <div id="tabs-header" class="flex bg-[#2d2d2d] overflow-x-auto border-b border-[#1e1e1e] shrink-0">
+            <div id="tabs-header" class="flex bg-[#2d2d2d] overflow-x-auto border-b border-[#1e1e1e] shrink-0" role="tablist">
                 <!-- Tabs injected here -->
             </div>
 
@@ -198,14 +222,23 @@
             <div id="editor-content-wrapper" class="flex-1 relative flex overflow-hidden">
                 
                 <!-- Welcome/Empty State -->
-                <div id="welcome-message" class="absolute inset-0 flex flex-col items-center justify-center text-[#3b3b3b] transition-opacity duration-300">
+                <div id="welcome-message" class="absolute inset-0 flex flex-col items-center justify-center text-[#3b3b3b] transition-opacity duration-300" aria-live="polite">
                     <svg class="w-24 h-24" fill="none" stroke="currentColor" stroke-width="0.5" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 011.5 1.5M10.5 6a1.5 1.5 0 00-1.5 1.5M3.75 6H7.5m3 1.5V11.25m3-4.5V12M12 2.25h3.75m-3 0h-3.75m2.25 0a1.5 1.5 0 011.5 1.5m-3 0a1.5 1.5 0 00-1.5 1.5M12 12V21M12 12V12"></path>
                     </svg>
-                    <div class="mt-8 space-y-2 text-center">
-                        <p class="text-[var(--text-color)] text-xl">100% Functional VS Code Clone</p>
-                        <p class="text-[var(--text-color)] text-sm">Click the <span class="text-[var(--active-color)]">New File</span> icon to begin.</p>
-                        <button onclick="createFile(null, false);" class="mt-4 bg-[#007acc] text-white px-4 py-1 rounded-sm hover:bg-[#006bbd] transition-colors shadow-md">Start Notetaking</button>
+                    <div class="mt-8 space-y-2 text-center max-w-lg mx-auto">
+                        <p class="text-[var(--text-color)] text-xl">100% Functional Notes IDE</p>
+                        <p class="text-green-500 font-semibold text-lg">Your notes are automatically saved to Local Storage.</p>
+                        <div class="bg-[#3c3c3c] p-4 rounded-md text-sm text-left">
+                            <p class="font-bold text-yellow-400 mb-1">Important Note on Persistence:</p>
+                            <p>All notes are saved directly in *this browser's Local Storage* on *this device*. </p>
+                            <ul class="list-disc list-inside mt-2 text-gray-300 space-y-1">
+                                <li>**If you refresh or close/reopen this site:** Your notes will be here.</li>
+                                <li>**If you clear your browser data or switch devices:** Your notes will be lost, as there is no cloud backup.</li>
+                            </ul>
+                        </div>
+                        <p class="text-[var(--text-color)] text-sm">Click the <span class="text-[var(--active-color)]">New Note</span> icon or <span class="text-[var(--active-color)]">Import Note</span> to begin.</p>
+                        <button onclick="createFile();" class="mt-4 bg-[#007acc] text-white px-4 py-1 rounded-sm hover:bg-[#006bbd] transition-colors shadow-md focus:outline-none focus:ring-2 focus:ring-white" aria-label="Start Notetaking: Create new note">Start Notetaking</button>
                     </div>
                 </div>
                 
@@ -214,31 +247,32 @@
                     
                     <!-- PRIMARY EDITOR PANEL -->
                     <div id="primary-editor-panel" class="relative flex flex-col flex-1 overflow-hidden">
-                        <div id="editor-breadcrumbs" class="h-[22px] bg-[#2d2d2d] flex items-center px-4 text-[11px] text-[#888888] border-b border-[#3e3e42] shrink-0 visually-hidden">
+                        <div id="editor-breadcrumbs" class="h-[22px] bg-[#2d2d2d] flex items-center px-4 text-[11px] text-[#888888] border-b border-[#3e3e42] shrink-0 visually-hidden" aria-label="Current File Path">
                             <!-- Breadcrumbs injected here -->
                         </div>
                         <div id="editor-wrapper" class="flex-1 relative flex overflow-hidden">
                             <!-- Line Numbering -->
-                            <div id="line-numbers" class="line-numbers custom-scrollbar overflow-y-auto shrink-0"></div>
+                            <div id="line-numbers" class="line-numbers custom-scrollbar overflow-y-auto shrink-0" aria-hidden="true"></div>
                             
-                            <!-- Editor + Syntax Overlay -->
-                            <div class="relative flex-1 h-full">
-                                <pre id="syntax-overlay" class="editor-overlay mono-font custom-scrollbar overflow-y-auto"></pre>
+                            <!-- Editor + Syntax Overlay Container -->
+                            <div class="relative flex-1 h-full editor-container">
+                                <pre id="syntax-overlay" class="editor-overlay mono-font custom-scrollbar overflow-y-auto" aria-hidden="true"></pre>
                                 <textarea 
                                     id="main-editor" 
                                     class="editor-textarea mono-font custom-scrollbar overflow-y-auto" 
                                     spellcheck="false"
                                     onfocus="this.style.outline = '1px solid var(--active-color)'"
                                     onblur="this.style.outline = 'none'"
+                                    aria-label="Code Editor"
                                 ></textarea>
                                 <!-- Unsaved Indicator Circle -->
-                                <div id="unsaved-indicator" class="absolute top-2 right-4 h-2 w-2 rounded-full bg-white opacity-0 transition-opacity z-20" title="Unsaved changes"></div>
+                                <div id="unsaved-indicator" class="absolute top-2 right-4 h-2 w-2 rounded-full bg-white opacity-0 transition-opacity z-20" title="Unsaved changes" aria-hidden="true"></div>
                             </div>
                         </div>
                     </div>
 
                     <!-- SECONDARY (PREVIEW) PANEL -->
-                    <div id="secondary-panel" class="flex-1 custom-scrollbar overflow-y-auto visually-hidden">
+                    <div id="secondary-panel" class="flex-1 custom-scrollbar overflow-y-auto visually-hidden" role="region" aria-label="Markdown Preview">
                         <h2 class="text-xl font-semibold mb-4 border-b pb-2">Markdown Preview</h2>
                         <div id="markdown-preview-content" class="prose max-w-none">
                             <!-- Rendered Markdown Content -->
@@ -250,21 +284,21 @@
     </div>
 
     <!-- 3. STATUS BAR -->
-    <div id="status-bar" class="h-[22px] bg-[var(--status-bg)] text-white flex items-center justify-between px-3 text-[11px] shrink-0">
+    <div id="status-bar" class="h-[22px] bg-[var(--status-bg)] text-white flex items-center justify-between px-3 text-[11px] shrink-0" role="status" aria-live="polite">
         <div class="flex items-center space-x-4">
-           <div class="flex items-center hover:bg-white/20 px-1 cursor-default rounded-sm">
+           <div class="flex items-center hover:bg-white/20 px-1 cursor-default rounded-sm" title="Data Storage Location">
               <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M8 9l4-4 4 4m0 6l-4 4-4-4"/></svg>
-              <span id="status-git">local-fs</span>
+              <span id="status-git">Local Storage</span>
            </div>
-           <div class="flex items-center hover:bg-white/20 px-1 cursor-default rounded-sm">
-              <span id="status-messages">No Errors</span>
+           <div class="flex items-center px-1 cursor-default rounded-sm font-semibold text-yellow-300">
+              <span id="status-messages">Auto-Saving Enabled</span>
            </div>
         </div>
         <div class="flex items-center space-x-4">
-           <span id="status-line-col" class="cursor-default hover:bg-white/20 px-1 rounded-sm">Ln 1, Col 1</span>
-           <span id="status-encoding" class="cursor-default hover:bg-white/20 px-1 rounded-sm">UTF-8</span>
-           <span id="status-lang" class="cursor-pointer hover:bg-white/20 px-1 rounded-sm">TEXT</span>
-           <button id="toggle-preview-btn" onclick="toggleSecondaryPanel()" class="hover:bg-white/20 px-1 rounded-sm visually-hidden" title="Toggle Markdown Preview">
+           <span id="status-line-col" class="cursor-default hover:bg-white/20 px-1 rounded-sm" aria-label="Cursor position">Ln 1, Col 1</span>
+           <span id="status-encoding" class="cursor-default hover:bg-white/20 px-1 rounded-sm" aria-label="File Encoding">UTF-8</span>
+           <span id="status-lang" class="cursor-pointer hover:bg-white/20 px-1 rounded-sm" aria-label="Current Language">TEXT</span>
+           <button id="toggle-preview-btn" onclick="toggleSecondaryPanel()" class="hover:bg-white/20 px-1 rounded-sm visually-hidden focus:outline-none focus:ring-2 focus:ring-white" title="Toggle Markdown Preview" aria-label="Toggle Markdown Preview">
                  <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M15 10l4.55 4.55a2 2 0 010 2.83l-4.55 4.55-4.55-4.55a2 2 0 010-2.83L15 10zm-9-5h6M6 9h6M6 13h6"/></svg>
            </button>
         </div>
@@ -272,12 +306,12 @@
 
     <script>
         // --- CONSTANTS & CONFIG ---
-        const LS_KEY = 'vscode_notes_clone_full_html';
+        const LS_KEY = 'vscode_notes_clone_simple';
         const generateId = () => Math.random().toString(36).substring(2, 9);
         const AUTO_SAVE_DELAY = 1000; // ms
 
         // --- GLOBAL STATE ---
-        let files = [];
+        let files = []; // Only files, no folders
         let openTabs = [];
         let activeTabId = null;
         let isFileDirty = false;
@@ -286,8 +320,6 @@
         let saveTimer; // for debouncing saves
 
         // --- DOM REFERENCES ---
-        const $sidebarPanel = document.getElementById('sidebar-panel');
-        const $sidebarTitle = document.getElementById('sidebar-title');
         const $sidebarContent = document.getElementById('sidebar-content');
         const $tabsHeader = document.getElementById('tabs-header');
         const $welcomeMessage = document.getElementById('welcome-message');
@@ -304,15 +336,28 @@
         const $unsavedIndicator = document.getElementById('unsaved-indicator');
         const $editorBreadcrumbs = document.getElementById('editor-breadcrumbs');
         const $togglePreviewBtn = document.getElementById('toggle-preview-btn');
+        const $statusMessages = document.getElementById('status-messages');
 
         // --- UTILS: File and Language Handling ---
 
         const getLanguageFromExt = (name) => {
-            if (name.endsWith('.js') || name.endsWith('.ts')) return 'javascript';
-            if (name.endsWith('.md')) return 'markdown';
-            if (name.endsWith('.json')) return 'json';
-            if (name.endsWith('.html')) return 'html';
-            return 'plaintext';
+            const ext = name.split('.').pop().toLowerCase();
+            switch (ext) {
+                case 'js':
+                case 'ts':
+                    return 'javascript';
+                case 'md':
+                    return 'markdown';
+                case 'json':
+                    return 'json';
+                case 'html':
+                case 'htm':
+                    return 'html';
+                case 'css':
+                    return 'css';
+                default:
+                    return 'plaintext';
+            }
         };
         
         const getFileIcon = (name) => {
@@ -322,18 +367,9 @@
                 case 'markdown': return '<svg class="w-4 h-4 text-blue-400 mr-2 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.75h-.007M12 12h-.007M12 17.25h-.007M12 21a9 9 0 110-18 9 9 0 010 18z"/></svg>';
                 case 'json': return '<svg class="w-4 h-4 text-purple-400 mr-2 shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15h4v2h-4v-2zm-2-8h8v-2h-8v2zm0 4h8v-2h-8v2z"/></svg>';
                 case 'html': return '<svg class="w-4 h-4 text-orange-400 mr-2 shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 0L6.5 1.75V4.5L12 6.25L17.5 4.5V1.75L12 0zM17.5 7L12 8.75L6.5 7V17L12 18.75L17.5 17V7z"/></svg>';
+                case 'css': return '<svg class="w-4 h-4 text-blue-500 mr-2 shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm3 15h-2v-2h2v2zm-2-4H7v-2h6v2zm0-4H7v-2h6v2z"/></svg>';
                 default: return '<svg class="w-4 h-4 text-gray-400 mr-2 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>';
             }
-        };
-
-        const getFolderIcon = (isOpen) => {
-            // Folder open/close indicator
-            return `<svg class="w-4 h-4 text-blue-400 mr-1.5 transition-transform duration-150 ${isOpen ? 'rotate-90' : ''} shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>`;
-        };
-
-        const getFolderNodeIcon = () => {
-             // Folder node icon
-             return `<svg class="w-4 h-4 text-blue-400 mr-2 shrink-0" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M10 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2h-8l-2-2z"/></svg>`;
         };
 
         // --- DATA PERSISTENCE (Local Storage) ---
@@ -349,13 +385,11 @@
                     isSecondaryPanelOpen = data.isSecondaryPanelOpen || false;
                 } else {
                     // Default starter files
-                    const folderId = generateId();
                     files = [
-                        { id: folderId, name: 'notes', type: 'folder', parentId: null, isOpen: true },
-                        { id: generateId(), name: 'README.md', type: 'file', parentId: null, content: '# Welcome to your Notes Clone\n\nThis application is a 100% functional VS Code clone built entirely in a single HTML file. Your notes are saved automatically in your browser\'s Local Storage.\n\n### Features:\n\n* **File Explorer:** Create, rename, and delete files/folders.\n* **Split View:** Click the icon in the status bar to see a live Markdown preview.\n* **Syntax Highlighting:** Supports JS, JSON, and Markdown coloring.', language: 'markdown' },
-                        { id: generateId(), name: 'utility.js', type: 'file', parentId: folderId, content: '// JavaScript Syntax Test\nconst logMessage = (msg) => {\n  // A simple comment\n  if (msg.length > 5) {\n    return msg.toUpperCase();\n  }\n  return 100;\n};\n\nlogMessage("hello world");', language: 'javascript' },
+                        { id: generateId(), name: 'Welcome Note.md', type: 'file', content: '# Welcome to your Notes IDE\n\nThis is a single-pane editor for quick notes and code snippets.\n\n### Important:\n\n* **Auto-Save:** Your notes are automatically saved to your browser\'s local storage every second.\n* **Syntax Highlighting:** Supported for JS, MD, JSON, and HTML.\n\nFiles are automatically saved to your browser\'s local storage.', language: 'markdown' },
+                        { id: generateId(), name: 'Snippet.js', type: 'file', content: '// JavaScript Syntax Test\nconst calculate = (a, b) => {\n  // Returns the sum of two numbers\n  return a + b; // keyword, variable, operator, punctuation, number\n};\n\ncalculate(10, 25);', language: 'javascript' },
                     ];
-                    openTabs = [files.find(f => f.name === 'README.md').id];
+                    openTabs = [files.find(f => f.name === 'Welcome Note.md').id];
                     activeTabId = openTabs[0];
                 }
             } catch (e) {
@@ -390,110 +424,191 @@
             saveFiles();
         };
 
+        const updateStatusMessage = (message, duration = 3000) => {
+            $statusMessages.textContent = message;
+            $statusMessages.classList.add('font-bold', 'text-white');
+            $statusMessages.classList.remove('text-yellow-300');
+            setTimeout(() => {
+                $statusMessages.textContent = 'Auto-Saving Enabled';
+                $statusMessages.classList.remove('font-bold', 'text-white');
+                $statusMessages.classList.add('text-yellow-300');
+            }, duration);
+        }
         
         const toggleSecondaryPanel = () => {
             isSecondaryPanelOpen = !isSecondaryPanelOpen;
             const activeFile = getFile(activeTabId);
 
-            if (isSecondaryPanelOpen && activeFile && activeFile.language === 'markdown') {
-                $secondaryPanel.classList.remove('visually-hidden');
-                $primaryEditorPanel.style.width = '50%';
-                $secondaryPanel.style.width = '50%';
-                renderMarkdownPreview(activeFile.content);
+            if (activeFile && activeFile.language === 'markdown') {
+                if (isSecondaryPanelOpen) {
+                    $secondaryPanel.classList.remove('visually-hidden');
+                    $primaryEditorPanel.style.width = '50%';
+                    $secondaryPanel.style.width = '50%';
+                    renderMarkdownPreview(activeFile.content);
+                } else {
+                    $secondaryPanel.classList.add('visually-hidden');
+                    $primaryEditorPanel.style.width = '100%';
+                    $secondaryPanel.style.width = '0%';
+                }
             } else {
-                $secondaryPanel.classList.add('visually-hidden');
-                $primaryEditorPanel.style.width = '100%';
-                $secondaryPanel.style.width = '0%';
+                 isSecondaryPanelOpen = false; // Force close if language changes from MD
+                 $secondaryPanel.classList.add('visually-hidden');
+                 $primaryEditorPanel.style.width = '100%';
+                 $secondaryPanel.style.width = '0%';
             }
             
-            // Re-render editor content to ensure correct state/preview update
             renderEditorContent(activeFile);
             saveFiles();
         };
 
-        // --- Sidebar Rendering (Explorer) ---
+        // --- Sidebar Rendering (Notes List) ---
 
         const renderExplorer = () => {
-            const rootNodes = files.filter(f => f.parentId === null).sort((a, b) => {
-                if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-                return a.name.localeCompare(b.name);
-            });
+            const sortedFiles = files.sort((a, b) => a.name.localeCompare(b.name));
 
-            const renderNode = (node, depth) => {
-                const paddingLeft = depth * 10 + 10;
+            const renderNode = (node) => {
                 const isActive = activeTabId === node.id;
-                const isFolder = node.type === 'folder';
+                const listItemClass = isActive ? 'bg-[#37373d] text-white' : 'text-[#cccccc] hover:bg-[#2a2d2e]';
 
                 // Renaming Input View
                 if (isRenaming === node.id) {
                     return `
-                        <div style="padding-left: ${paddingLeft}px;" class="flex items-center py-[2px] cursor-pointer">
-                            ${isFolder ? getFolderNodeIcon() : getFileIcon(node.name)}
+                        <div role="listitem" class="flex items-center py-[2px] cursor-pointer pl-4">
+                            ${getFileIcon(node.name)}
                             <input
                                 id="rename-input-${node.id}"
                                 type="text"
                                 value="${node.name}"
-                                class="bg-[#3c3c3c] border border-[#007acc] text-[13px] text-white outline-none px-1 w-2/3"
+                                class="bg-[#3c3c3c] border border-[var(--active-color)] text-[13px] text-white outline-none px-1 w-2/3"
                                 onblur="handleRename('${node.id}', this.value)"
                                 onkeydown="if(event.key === 'Enter') { handleRename('${node.id}', this.value); }"
+                                aria-label="Rename file ${node.name}"
                                 autofocus
                             />
                         </div>
-                        ${isFolder && node.isOpen ? files.filter(f => f.parentId === node.id).map(f => renderNode(f, depth + 1)).join('') : ''}
                     `;
                 }
 
-                // Normal Node View
-                const nodeHtml = `
+                // Normal Note View
+                return `
                     <div 
-                        style="padding-left: ${paddingLeft}px;" 
-                        class="flex items-center py-[2px] cursor-pointer group h-6 text-[13px] leading-6 truncate ${isActive ? 'bg-[#37373d] text-white' : 'text-[#cccccc] hover:bg-[#2a2d2e]'}"
+                        role="listitem"
+                        class="flex items-center py-[2px] cursor-pointer group h-6 text-[13px] leading-6 truncate pl-4 pr-1 ${listItemClass}"
                         data-id="${node.id}"
-                        onclick="${isFolder ? `toggleFolder('${node.id}')` : `openFile('${node.id}')`}"
+                        onclick="openFile('${node.id}')"
+                        tabindex="0"
+                        aria-label="Note: ${node.name}"
                     >
-                        <span class="mr-1.5 opacity-80 shrink-0 flex items-center" onclick="event.stopPropagation()">
-                            ${isFolder ? getFolderIcon(node.isOpen) : getFileIcon(node.name)}
-                        </span>
+                        ${getFileIcon(node.name)}
                         <span class="truncate flex-1">${node.name}</span>
                         
                         <!-- Action Icons -->
-                        <div class="flex space-x-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity pr-2">
-                            <button title="Rename" class="hover:text-white" onclick="event.stopPropagation(); startRename('${node.id}')">
+                        <div class="flex space-x-1 ml-2 opacity-0 group-hover:opacity-100 transition-opacity focus-within:opacity-100">
+                            <button title="Rename" aria-label="Rename ${node.name}" class="hover:text-white focus:outline-none focus:ring-2 focus:ring-[var(--active-color)] rounded" onclick="event.stopPropagation(); startRename('${node.id}')">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
                             </button>
-                            <button title="Delete" class="hover:text-red-400" onclick="event.stopPropagation(); deleteFile('${node.id}')">
+                            <button title="Delete" aria-label="Delete ${node.name}" class="hover:text-red-400 focus:outline-none focus:ring-2 focus:ring-red-400 rounded" onclick="event.stopPropagation(); deleteFile('${node.id}')">
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                             </button>
                         </div>
                     </div>
                 `;
-
-                if (isFolder && node.isOpen) {
-                    const children = files.filter(f => f.parentId === node.id).sort((a, b) => {
-                        if (a.type !== b.type) return a.type === 'folder' ? -1 : 1;
-                        return a.name.localeCompare(b.name);
-                    }).map(f => renderNode(f, depth + 1)).join('');
-                    return nodeHtml + children;
-                }
-                return nodeHtml;
             };
 
             const explorerHtml = `
                 <div class="mt-1">
-                    <div class="px-4 py-2 text-xs font-bold text-blue-400 border-b border-[#303030]">LOCAL WORKSPACE</div>
-                    ${rootNodes.map(node => renderNode(node, 1)).join('')}
+                    <div class="px-4 py-2 text-xs font-bold text-blue-400 border-b border-[#303030]">NOTES (${files.length})</div>
+                    <div role="list">
+                       ${sortedFiles.map(renderNode).join('')}
+                    </div>
                 </div>
             `;
             $sidebarContent.innerHTML = explorerHtml;
         };
 
+        // --- Import Notes Functionality ---
+        const importFile = (file) => {
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const content = e.target.result;
+                const newId = generateId();
+                const newFile = {
+                    id: newId,
+                    name: file.name,
+                    type: 'file',
+                    content: content,
+                    language: getLanguageFromExt(file.name),
+                };
+                files.push(newFile);
+                openFile(newId);
+                updateStatusMessage(`Imported "${file.name}" successfully!`);
+                document.getElementById('file-input').value = ''; // Clear file input
+            };
+            reader.onerror = () => {
+                updateStatusMessage(`Error reading file: ${file.name}`, 5000);
+            };
+            
+            // Limit file size to prevent memory issues
+            if (file.size > 1024 * 1024 * 5) { // 5MB limit
+                 updateStatusMessage('File is too large (max 5MB)', 5000);
+                 document.getElementById('file-input').value = '';
+                 return;
+            }
+
+            reader.readAsText(file);
+        };
+        
+        // --- DOWNLOAD NOTES FUNCTIONALITY (NEW) ---
+
+        const downloadAllFiles = () => {
+            if (files.length === 0) {
+                updateStatusMessage('No notes to download!', 3000);
+                return;
+            }
+
+            updateStatusMessage(`Preparing ${files.length} notes for download...`, 5000);
+            
+            // Ensure the application state is saved before zipping
+            saveFiles(); 
+
+            // Initialize JSZip
+            const zip = new JSZip();
+
+            // Add each file to the ZIP archive
+            files.forEach(file => {
+                zip.file(file.name, file.content);
+            });
+
+            // Generate the ZIP file and trigger download
+            zip.generateAsync({ type: "blob" })
+               .then(function(content) {
+                   // Create a download link and click it programmatically
+                   const downloadLink = document.createElement('a');
+                   downloadLink.href = URL.createObjectURL(content);
+                   downloadLink.download = `Notes-Backup-${new Date().toISOString().slice(0, 10)}.zip`;
+                   
+                   // Append to body, click, and remove
+                   document.body.appendChild(downloadLink);
+                   downloadLink.click();
+                   document.body.removeChild(downloadLink);
+                   
+                   updateStatusMessage(`Successfully downloaded ${files.length} notes as ZIP!`, 5000);
+               })
+               .catch(error => {
+                   console.error("ZIP Generation failed:", error);
+                   updateStatusMessage('Download failed: Could not create ZIP file.', 5000);
+               });
+        };
+
+
         // --- Tab Rendering ---
 
         const renderTabs = () => {
-            // Filter out files that might have been deleted
             openTabs = openTabs.filter(id => getFile(id));
 
-            const html = openTabs.map(id => {
+            const html = openTabs.map((id, index) => {
                 const file = getFile(id);
                 if (!file) return '';
 
@@ -502,17 +617,23 @@
                 
                 return `
                     <div 
-                        class="group flex items-center h-[35px] px-3 text-[13px] border-r border-[#1e1e1e] cursor-pointer shrink-0 transition-colors duration-150"
+                        role="tab"
+                        aria-selected="${isActive}"
+                        aria-controls="editor-content-wrapper"
+                        tabindex="${isActive ? 0 : -1}"
+                        id="tab-${id}"
+                        class="group flex items-center h-[35px] px-3 text-[13px] border-r border-[#1e1e1e] cursor-pointer shrink-0 transition-colors duration-150 focus:outline-none focus:ring-2 focus:ring-[var(--active-color)] rounded-t"
                         style="min-width: 120px; max-width: 200px; ${isActive ? 'background-color: var(--editor-bg); color: white; border-top: 2px solid var(--active-color); padding-top: 2px;' : 'background-color: #2d2d2d; color: #969696; border-top: 2px solid transparent; padding-top: 2px; hover:bg-[#383838]'}"
                         onclick="setActiveTab('${id}')"
                     >
                         ${getFileIcon(file.name)}
                         <span class="truncate flex-1">${file.name}</span>
-                        ${isDirty ? `<div class="h-2 w-2 rounded-full bg-white mx-2" title="Unsaved changes"></div>` : ''}
+                        ${isDirty ? `<div class="h-2 w-2 rounded-full bg-white mx-2" title="Unsaved changes" aria-hidden="true"></div>` : ''}
                         <button 
-                            class="ml-2 p-[2px] rounded-md hover:bg-[#4a4a4a] transition-opacity ${isActive || !isDirty ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
+                            class="ml-2 p-[2px] rounded-md hover:bg-[#4a4a4a] transition-opacity focus:opacity-100 ${isActive || !isDirty ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}"
                             onclick="closeTab('${id}'); event.stopPropagation()"
-                            title="Close"
+                            title="Close tab for ${file.name}"
+                            aria-label="Close tab for ${file.name}"
                         >
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
                         </button>
@@ -528,24 +649,20 @@
             if (!activeFile) return;
 
             // 1. Update Breadcrumbs and Status Bar
-            $editorBreadcrumbs.innerHTML = `
-                 <span>local-storage</span>
-                 <svg class="w-3 h-3 mx-1" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-                 <span class="text-white">${activeFile.name}</span>
-            `;
+            $editorBreadcrumbs.innerHTML = `<span class="text-white">${activeFile.name}</span>`;
             $statusBarLang.textContent = activeFile.language.toUpperCase();
             
             // 2. Load Content and Sync UI
             $mainEditor.value = activeFile.content;
             updateLineNumbers();
             updateSyntaxOverlay();
-            updateStatusBar(activeFile.name); // Updates line/col and title bar
+            updateStatusBar(activeFile.name); 
+            $mainEditor.focus();
 
             // 3. Handle Preview Panel (Markdown only)
             const isMarkdown = activeFile.language === 'markdown';
             $togglePreviewBtn.classList.toggle('visually-hidden', !isMarkdown);
             
-            // Re-check if panel should be visible based on file type
             if (isMarkdown && isSecondaryPanelOpen) {
                 renderMarkdownPreview(activeFile.content);
                 $secondaryPanel.classList.remove('visually-hidden');
@@ -581,42 +698,44 @@
             const activeFile = getFile(activeTabId);
             if (activeFile) {
                  $statusBarLang.textContent = activeFile.language.toUpperCase();
+                 $statusMessages.textContent = isFileDirty ? 'Saving...' : 'Auto-Saving Enabled';
+                 $statusMessages.classList.toggle('text-white', isFileDirty);
+                 $statusMessages.classList.toggle('text-yellow-300', !isFileDirty);
             } else {
                  $statusBarLang.textContent = 'TEXT';
                  $statusBarLineCol.textContent = 'Ln 1, Col 1';
+                 $statusMessages.textContent = 'Auto-Saving Enabled';
+                 $statusMessages.classList.remove('text-white');
+                 $statusMessages.classList.add('text-yellow-300');
             }
         };
 
         // --- File System Operations ---
 
-        const createFile = (parentId, isFolder) => {
+        const createFile = () => {
             const id = generateId();
-            let name = isFolder ? 'New Folder' : `untitled-${files.length + 1}.md`;
+            let name = `untitled-${files.length + 1}.md`;
             
             // Ensure unique name for new item
             let counter = 1;
             const originalName = name;
-            while(files.some(f => f.name === name && f.parentId === parentId)) {
-                name = originalName.replace(`.${isFolder ? '' : 'md'}`, `-${counter}.${isFolder ? '' : 'md'}`);
+            while(files.some(f => f.name === name)) {
+                name = originalName.replace('.md', `-${counter}.md`);
                 counter++;
             }
             
             const newNode = { 
                 id, 
                 name, 
-                type: isFolder ? 'folder' : 'file', 
-                parentId, 
-                content: isFolder ? '' : `# ${name}`, 
-                isOpen: true,
+                type: 'file', 
+                content: `# ${name}`, 
                 language: getLanguageFromExt(name),
             };
             files.push(newNode);
 
-            if (!isFolder) {
-                openFile(id);
-            }
+            openFile(id);
             isRenaming = id; 
-            updateUI(); // Renders the input field for renaming
+            updateUI(); 
 
             // Focus on the new input element after rendering
             setTimeout(() => {
@@ -624,28 +743,19 @@
                 if (input) {
                     input.focus();
                     const lastDot = input.value.lastIndexOf('.');
-                    if (lastDot > 0 && newNode.type === 'file') {
+                    if (lastDot > 0) {
                         input.setSelectionRange(0, lastDot);
                     } else {
                         input.select();
                     }
                 }
             }, 0); 
-            // Note: Saving happens in updateUI() via renderExplorer -> saveFiles()
-        };
-
-        const toggleFolder = (id) => {
-            const file = getFile(id);
-            if (file && file.type === 'folder') {
-                file.isOpen = !file.isOpen;
-                updateUI();
-            }
         };
 
         const setActiveTab = (id) => {
             if (activeTabId === id) return;
             activeTabId = id;
-            isFileDirty = false; // Reset dirty state when switching
+            isFileDirty = false; 
             updateUI();
         };
         
@@ -690,60 +800,46 @@
             const file = getFile(id);
             newName = newName.trim();
             if (file && newName && newName !== file.name) {
-                // Basic validation: cannot rename to an existing name at the same parent level
-                const siblingExists = files.some(f => f.name === newName && f.parentId === file.parentId && f.id !== id);
+                const siblingExists = files.some(f => f.name === newName && f.id !== id);
                 if (siblingExists) {
-                    console.error("Cannot rename: an item with that name already exists.");
-                    // Keep renaming mode active, forcing user to try again
+                    updateStatusMessage("Cannot rename: a note with that name already exists.", 5000);
                     isRenaming = id; 
                 } else {
                     file.name = newName;
-                    if (file.type === 'file') {
-                        file.language = getLanguageFromExt(newName);
-                    }
+                    file.language = getLanguageFromExt(newName);
                     isRenaming = null;
                 }
             } else {
-                 isRenaming = null; // Exit renaming if name is empty or unchanged
+                 isRenaming = null; 
             }
             updateUI();
         };
 
         const deleteFile = (id) => {
-            // Using a simple alert replacement for confirmation, as custom modals are complex for single-file
-            const confirmation = window.prompt(`Type DELETE to confirm deletion of "${getFile(id)?.name}":`);
-            if (confirmation !== 'DELETE') return;
+            const fileToDelete = getFile(id);
+            
+            // Custom modal replacement for confirmation dialog
+            if (!window.confirm(`Are you sure you want to delete "${fileToDelete?.name}"?\n\nThis cannot be undone.`)) return;
 
-            const idsToDelete = [id];
-            const getChildren = (parentId) => {
-                files.filter(f => f.parentId === parentId).forEach(f => {
-                    idsToDelete.push(f.id);
-                    if (f.type === 'folder') getChildren(f.id);
-                });
-            };
-            const file = getFile(id);
-            if (file && file.type === 'folder') {
-                getChildren(id);
-            }
+            files = files.filter(f => f.id !== id);
+            openTabs = openTabs.filter(tabId => tabId !== id);
             
-            files = files.filter(f => !idsToDelete.includes(f.id));
-            openTabs = openTabs.filter(tabId => !idsToDelete.includes(tabId));
-            
-            if (idsToDelete.includes(activeTabId)) {
+            if (activeTabId === id) {
                 activeTabId = openTabs.length > 0 ? openTabs[openTabs.length - 1] : null;
                 isFileDirty = false;
             }
-
+            updateStatusMessage(`Note "${fileToDelete.name}" deleted.`, 3000);
             updateUI();
         };
         
-        // --- EDITOR FUNCTIONALITY (Same as before, ensuring core features work) ---
+        // --- EDITOR FUNCTIONALITY ---
 
         const updateDirtyState = (dirty) => {
             isFileDirty = dirty;
             $unsavedIndicator.classList.toggle('opacity-0', !dirty);
             const activeFile = getFile(activeTabId);
             $titleBar.textContent = `Notes App | ${activeFile?.name || 'Welcome'}${isFileDirty ? ' *' : ''}`;
+            renderStatusBar();
             renderTabs();
         };
         
@@ -758,6 +854,7 @@
         const updateLineNumbers = () => {
             const content = $mainEditor.value;
             const lineCount = content.split('\n').length;
+            // +1 to prevent scrollbar flicker when cursor is at the last line end
             const linesHtml = Array.from({ length: lineCount + 1 }, (_, i) => `<div>${i + 1}</div>`).join('');
             $lineNumbers.innerHTML = linesHtml;
         };
@@ -766,9 +863,9 @@
             const cursorStart = $mainEditor.selectionStart;
             const content = $mainEditor.value.substring(0, cursorStart);
             const line = content.split('\n').length;
-            const column = cursorStart - content.lastIndexOf('\n') + (content.lastIndexOf('\n') === -1 ? 1 : 0);
+            const column = cursorStart - content.lastIndexOf('\n');
             
-            $statusBarLineCol.textContent = `Ln ${line}, Col ${column}`;
+            $statusBarLineCol.textContent = `Ln ${line}, Col ${column + 1}`;
             $titleBar.textContent = `Notes App | ${fileName}${isFileDirty ? ' *' : ''}`;
         };
         
@@ -777,11 +874,12 @@
             $syntaxOverlay.scrollTop = $mainEditor.scrollTop;
         };
 
-        // --- SYNTAX HIGHLIGHTING (Simplified for robustness) ---
+        // --- SYNTAX HIGHLIGHTING (Tokenization Logic) ---
         
         const tokenize = (code, lang) => {
             let tokens = [];
             let pos = 0;
+            
             const regexes = {
                 javascript: [
                     { type: 'comment', pattern: /(\/\/.*|\/\*[\s\S]*?\*\/)/y },
@@ -796,17 +894,25 @@
                     { type: 'bold', pattern: /(\*\*|__)(.+?)\1/y },
                     { type: 'italic', pattern: /(\*|_)(.+?)\1/y },
                     { type: 'link', pattern: /(\[.*?\]\s*\(.*?\))/y },
-                    { type: 'list', pattern: /^(\s*[\*-]\s+)/ym },
+                    { type: 'list', pattern: /^([\*-]\s+)/ym },
                 ],
+                // Simple regex for JSON to catch keys and strings
+                json: [
+                    { type: 'string', pattern: /(["'`])(?:\\.|[^\\\n])*?\1/y },
+                    { type: 'number', pattern: /\b\d+(\.\d+)?\b/y },
+                    { type: 'keyword', pattern: /\b(true|false|null)\b/y },
+                    { type: 'punctuation', pattern: /[\{\}\[\]:,]/y },
+                ],
+                // Default fallback
                 plaintext: [],
             };
 
             const langRegexes = regexes[lang] || regexes['plaintext'];
             
-            // Simplified tokenization: match longest token or treat as text
             while (pos < code.length) {
                 let match = null;
                 let matchedType = null;
+                let matchedValue = null;
 
                 for (const { type, pattern } of langRegexes) {
                     pattern.lastIndex = pos;
@@ -814,21 +920,21 @@
                     if (currentMatch && currentMatch.index === pos && (!match || currentMatch[0].length > match[0].length)) {
                         match = currentMatch;
                         matchedType = type;
+                        matchedValue = currentMatch[0];
                     }
                 }
 
                 if (match) {
-                    const value = match[0];
-                    tokens.push({ type: matchedType, value: value });
-                    pos += value.length;
+                    tokens.push({ type: matchedType, value: matchedValue });
+                    pos += matchedValue.length;
                 } else {
-                    // Capture non-tokenized text (until next token start or end of file)
                     let nextPos = pos + 1;
                     let foundNextToken = false;
                     while (nextPos < code.length && !foundNextToken) {
                         for (const { pattern } of langRegexes) {
                             pattern.lastIndex = nextPos;
-                            if (pattern.exec(code) && pattern.exec(code).index === nextPos) {
+                            // Check if a token starts at the next position
+                            if (pattern.exec(code)?.index === nextPos) {
                                 foundNextToken = true;
                                 break;
                             }
@@ -850,7 +956,9 @@
 
             let html = '';
             tokens.forEach(token => {
+                // Escape HTML entities to prevent rendering issues
                 let value = token.value.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+                
                 if (token.type !== 'text') {
                     html += `<span class="token ${token.type}">${value}</span>`;
                 } else {
@@ -858,13 +966,17 @@
                 }
             });
             
+            // Replace spaces with non-breaking spaces to preserve indentation and word wrap
             html = html.replace(/ /g, '&nbsp;'); 
             return html;
         };
 
         const updateSyntaxOverlay = () => {
             const activeFile = getFile(activeTabId);
-            if (!activeFile) return;
+            if (!activeFile) {
+                $syntaxOverlay.innerHTML = '';
+                return;
+            }
             const highlightedHtml = highlightCode($mainEditor.value, activeFile.language);
             $syntaxOverlay.innerHTML = highlightedHtml;
         };
@@ -884,8 +996,9 @@
             const listItems = html.match(/^[\*-]\s*(.*)$/gm);
             if (listItems) {
                 const listHtml = listItems.map(item => `<li>${item.replace(/^[\*-]\s*/, '')}</li>`).join('');
+                // Remove list items from the main block before re-injecting them as a <ul>
                 html = html.replace(/^[\*-]\s*(.*)\n?/gm, '').trim(); 
-                html += `<ul>${listHtml}</ul>`;
+                html += listItems.length > 0 ? `<ul>${listHtml}</ul>` : '';
             }
             
             // Handle Paragraphs
@@ -919,6 +1032,7 @@
             saveTimer = setTimeout(() => {
                 updateDirtyState(false); 
                 saveFiles(); 
+                updateStatusMessage('Note Saved');
             }, AUTO_SAVE_DELAY);
         };
         
@@ -942,7 +1056,6 @@
         document.addEventListener('DOMContentLoaded', () => {
             loadFiles();
             
-            // Ensure correct initial state for panels
             if (isSecondaryPanelOpen) {
                  $secondaryPanel.classList.remove('visually-hidden');
             } else {
@@ -957,6 +1070,9 @@
             $mainEditor.addEventListener('keyup', (e) => updateStatusBar(getFile(activeTabId)?.name || ''));
             $mainEditor.addEventListener('click', (e) => updateStatusBar(getFile(activeTabId)?.name || ''));
             $mainEditor.addEventListener('keydown', handleTabKey);
+            $mainEditor.addEventListener('focus', () => {
+                if (activeTabId) updateSyntaxOverlay(); // Redraw on focus for consistency
+            });
         });
         
     </script>
