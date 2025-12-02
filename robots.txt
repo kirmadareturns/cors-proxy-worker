@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://thunderstrike3000.xyz/sitemap.xml
