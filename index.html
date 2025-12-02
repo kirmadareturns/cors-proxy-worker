@@ -115,13 +115,15 @@
   tab-size: inherit;
   overflow-x: hidden;   /* <--  kills horizontal scrollbar  */
 }
-        .editor-textarea {
-            background-color: transparent;
-            color: var(--text-color);
-            resize: none;
-            caret-color: white;
-            z-index: 10;
-        }
+.editor-textarea {
+    background-color: transparent;
+    color: var(--text-color);
+    resize: none;
+    caret-color: white;
+    z-index: 10;
+    padding-right: 48px;   /* match gutter width  */
+    overflow-x: hidden;    /* hide under-gutter text  */
+}
 
         .editor-overlay {
             pointer-events: none;
