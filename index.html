@@ -544,9 +544,10 @@
                 $primaryEditorPanel.style.width = '100%';
                 $secondaryPanel.style.width = '0%';
             }
-            /*  force textarea to re-flow inside the new pixel width  */
-$mainEditor.style.width = $primaryEditorPanel.clientWidth + 'px';
-$mainEditor.dispatchEvent(new Event('input'));   // re-trigger wrap calculation
+/*  make textarea fit the pixel box that is really left  */
+const gutterWidth = 48; // px – matches .line-numbers
+$mainEditor.style.width = ($primaryEditorPanel.clientWidth - gutterWidth) + 'px';
+$mainEditor.dispatchEvent(new Event('input'));
             
             renderEditorContent(activeFile);
             saveFiles();
