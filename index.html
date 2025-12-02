@@ -1274,6 +1274,35 @@
                 }
             });
         });
+        /* -----  EXTRA KEYBOARD SHORTCUTS  ----- */
+document.addEventListener('keydown', e => {
+  if (!activeTabId) return;          // no file open = do nothing
+
+  const ctrlOrCmd = e.ctrlKey || e.metaKey;
+
+  /* 1  Ctrl + N  –  new note  */
+  if (ctrlOrCmd && e.key === 'n') {
+    e.preventDefault();
+    createFile();
+  }
+  /* 2  Ctrl + S  –  instant ZIP backup  */
+  else if (ctrlOrCmd && e.key === 's') {
+    e.preventDefault();
+    downloadAllFiles();        // already shows “Saved X notes” message
+  
+  }
+  /* 3  Ctrl + W  –  close current tab  */
+  else if (ctrlOrCmd && e.key === 'w') {
+    e.preventDefault();
+    closeTab(activeTabId);
+  }
+  /* 4  Ctrl + P  –  toggle Markdown preview (only if file is .md)  */
+  else if (ctrlOrCmd && e.key === 'p') {
+    e.preventDefault();
+    const f = getFile(activeTabId);
+    if (f && f.language === 'markdown') toggleSecondaryPanel();
+  }
+});
         
     </script>
 </body>
