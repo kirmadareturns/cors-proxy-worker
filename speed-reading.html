@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>Speed Reader</title>
+  <title>Speed Reader Ultimate</title>
   <style>
     :root {
       --bg-color: #000000;
@@ -23,15 +23,14 @@
     body {
       background-color: var(--bg-color);
       font-family: var(--font-stack);
-      height: 100vh; /* Mobile viewport height */
-      height: 100dvh; /* Dynamic viewport height for mobile browsers */
+      height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
     }
 
     /* === HEADER === */
-    /* Matches top text in image */
     .header {
       text-align: center;
       padding-top: 5vh;
@@ -41,7 +40,6 @@
     .header h1 {
       font-size: 1rem;
       font-weight: 400;
-      line-height: 1.4;
       color: #666;
     }
     .header span {
@@ -49,7 +47,7 @@
       color: #fff;
     }
 
-    /* === READER STAGE (Centered) === */
+    /* === READER STAGE === */
     .stage {
       flex: 1;
       display: flex;
@@ -59,10 +57,9 @@
       width: 100%;
     }
 
-    /* The Rails */
     .reticle {
       position: relative;
-      width: min(90vw, 360px); /* Responsive width */
+      width: min(90vw, 360px);
       height: 140px;
       display: flex;
       align-items: center;
@@ -71,11 +68,10 @@
       border-bottom: 2px solid var(--line-color);
     }
 
-    /* Vertical Ticks */
     .reticle::before, .reticle::after {
       content: '';
       position: absolute;
-      left: 35%; /* Optimal Recognition Point */
+      left: 35%;
       width: 2px;
       height: 10px;
       background-color: var(--line-color);
@@ -83,32 +79,25 @@
     .reticle::before { top: 0; }
     .reticle::after { bottom: 0; }
 
-    /* Word Display */
     .word-display {
       width: 100%;
       display: grid;
       grid-template-columns: 1fr auto 1fr; 
       align-items: baseline;
-      /* Responsive font size */
       font-size: clamp(3rem, 15vw, 4.5rem); 
       line-height: 1;
       user-select: none;
     }
 
-    /* NO BOLDING - Uniform Weight */
-    .word-display .left,
-    .word-display .right,
-    .word-display .pivot {
+    .word-display .left, .word-display .right, .word-display .pivot {
       color: var(--text-active);
-      font-weight: 400; /* Regular weight */
+      font-weight: 400;
     }
 
     .word-display .left { text-align: right; }
     .word-display .right { text-align: left; }
-    /* Visual correction to align the character center with the 35% tick */
     .word-display .pivot { transform: translateX(-0.05ch); }
 
-    /* Counter */
     #counter {
       margin-top: 1rem;
       font-size: 0.8rem;
@@ -116,23 +105,20 @@
       font-variant-numeric: tabular-nums;
     }
 
-    /* === CONTROLS (Bottom & Dimmed) === */
+    /* === CONTROLS === */
     .controls {
       flex: 0 0 auto;
       width: 100%;
       padding: 20px;
-      padding-bottom: 40px; /* Safe area for mobile home bar */
+      padding-bottom: 40px;
       display: flex;
       flex-direction: column;
       gap: 15px;
       align-items: center;
-      /* "Out of eyesight" styling */
       opacity: 0.3; 
       transition: opacity 0.3s;
     }
-    .controls:hover, .controls:active, .controls:focus-within {
-      opacity: 1;
-    }
+    .controls:hover, .controls:active, .controls:focus-within { opacity: 1; }
 
     .main-btn {
       background: transparent;
@@ -185,7 +171,6 @@
     }
     input:focus { color: #fff; outline: none; border-color: #666; }
 
-    /* Text Input Overlay */
     #textOverlay {
       position: fixed;
       top: 0; left: 0; width: 100%; height: 100%;
@@ -202,7 +187,7 @@
       border: 1px solid #333;
       color: #ccc;
       padding: 15px;
-      font-size: 16px; /* Prevents zoom on mobile */
+      font-size: 16px; 
       resize: none;
       border-radius: 8px;
       margin-bottom: 15px;
@@ -213,7 +198,7 @@
 <body>
 
   <div class="header">
-    <h1>Can you read at <span id="header-wpm">400</span> words per minute?</h1>
+    <h1>Can you read at <span id="header-wpm">400</span> WPM?</h1>
   </div>
 
   <div class="stage">
@@ -264,7 +249,7 @@ const LS_TEXT = 'sr_text';
 const LS_INDEX = 'sr_idx';
 const LS_WPM = 'sr_wpm';
 
-const DEFAULT_TEXT = "Can you read at 500 words per minute? Ready, Set, Go! Speed reading is the art of silencing subvocalization.";
+const DEFAULT_TEXT = "The average human reads at 230 words per minute, but your brain is capable of absorbing information five times faster. This method, known as Rapid Serial Visual Presentation, eliminates the time your eyes waste moving between words. By anchoring your focus on a single Optimal Recognition Point, you bypass the inner voice in your head that slows you down. You are no longer reading; you are downloading information directly into your mind. Ready to go faster?";
 
 let words = [], currentIndex = 0, isPlaying = false, timer = null, ttsEnabled = false;
 
@@ -319,13 +304,29 @@ function play() {
   if(ttsEnabled) {
     const chunk = words.slice(currentIndex).join(' ');
     const u = new SpeechSynthesisUtterance(chunk);
-    u.rate = Math.min(Math.max(wpmInput.value / 200, 0.5), 3.0);
+    
+    // === FIXED SPEED LOGIC ===
+    // Web Speech API standard: Rate 1.0 ~= 180-200 WPM
+    // Rate 2.0 ~= 400 WPM. Rate 10.0 = Max.
+    // We calculate rate dynamically based on input.
+    const calculatedRate = (parseInt(wpmInput.value) || 200) / 200;
+    
+    // We cap at 10 (browser limit) instead of 3, allowing for very fast reading.
+    u.rate = Math.min(Math.max(calculatedRate, 0.5), 10.0);
+    
     let offset = currentIndex;
-    u.onboundary = e => { if(e.name === 'word') { renderWord(offset); currentIndex = offset; offset++; } };
+    u.onboundary = e => { 
+        if(e.name === 'word') { 
+            renderWord(offset); 
+            currentIndex = offset; 
+            offset++; 
+        } 
+    };
     u.onend = stop;
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(u);
   } else {
+    // Normal Timer Logic
     const ms = 60000 / (parseInt(wpmInput.value) || 300);
     timer = setInterval(tick, ms);
   }
@@ -340,9 +341,14 @@ function stop() {
 
 playBtn.addEventListener('click', () => isPlaying ? stop() : play());
 
+// === FIXED LISTENER ===
+// Now restarts playback IMMEDIATELY on input change to apply new speed
 wpmInput.addEventListener('input', e => {
   headerWpm.textContent = e.target.value;
-  if(isPlaying && !ttsEnabled) { stop(); play(); }
+  if(isPlaying) { 
+    stop(); 
+    play(); // Restart to apply new speed immediately
+  }
 });
 
 ttsBtn.addEventListener('click', () => {
