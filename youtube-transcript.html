@@ -33,293 +33,338 @@
     h1 {
       color: #333;
       margin-bottom: 10px;
-      font-size: 28px;
+      font-size: 32px;
+      text-align: center;
     }
 
     .subtitle {
       color: #666;
       margin-bottom: 30px;
-      font-size: 14px;
+      font-size: 16px;
+      text-align: center;
     }
 
-    .input-group {
-      display: flex;
-      gap: 10px;
-      margin-bottom: 20px;
-    }
-
-    input {
-      flex: 1;
-      padding: 14px 18px;
-      border: 2px solid #e0e0e0;
-      border-radius: 10px;
-      font-size: 15px;
-      transition: all 0.3s;
-    }
-
-    input:focus {
-      outline: none;
-      border-color: #667eea;
-      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-    }
-
-    .btn {
-      padding: 14px 28px;
-      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-      color: white;
-      border: none;
-      border-radius: 10px;
-      font-size: 15px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: transform 0.2s, box-shadow 0.2s;
-      text-decoration: none;
-      display: inline-block;
-    }
-
-    .btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
-    }
-
-    .btn:active {
-      transform: translateY(0);
-    }
-
-    .result-box {
-      background: #f8f9fa;
-      border-radius: 12px;
-      padding: 24px;
-      margin-top: 20px;
-      display: none;
-      border: 2px solid #667eea;
-    }
-
-    .result-box.show {
-      display: block;
+    .steps {
+      background: linear-gradient(135deg, #667eea15 0%, #764ba215 100%);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 30px;
     }
 
     .step {
-      background: white;
-      padding: 20px;
-      border-radius: 10px;
-      margin-bottom: 16px;
-      border-left: 4px solid #667eea;
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 24px;
+    }
+
+    .step:last-child {
+      margin-bottom: 0;
     }
 
     .step-number {
-      display: inline-block;
-      background: #667eea;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
       color: white;
-      width: 32px;
-      height: 32px;
+      width: 36px;
+      height: 36px;
       border-radius: 50%;
-      text-align: center;
-      line-height: 32px;
-      font-weight: bold;
-      margin-right: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 18px;
+      flex-shrink: 0;
+      margin-right: 16px;
     }
 
-    .step h3 {
-      display: inline-block;
+    .step-content h3 {
       color: #333;
       font-size: 18px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
+      font-weight: 700;
     }
 
-    .step p {
+    .step-content p {
       color: #666;
+      font-size: 15px;
       line-height: 1.6;
-      margin-left: 44px;
-      margin-top: 8px;
     }
 
-    .code-box {
-      background: #2d3748;
-      color: #e2e8f0;
-      padding: 16px;
+    .visual-guide {
+      background: #f8f9fa;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 30px;
+    }
+
+    .visual-guide h3 {
+      color: #333;
+      font-size: 18px;
+      margin-bottom: 16px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .guide-image {
+      background: white;
       border-radius: 8px;
-      font-family: 'Courier New', monospace;
-      font-size: 13px;
-      overflow-x: auto;
-      margin: 12px 0 12px 44px;
-      position: relative;
-      word-break: break-all;
-      white-space: pre-wrap;
+      padding: 16px;
+      text-align: center;
+      margin-bottom: 12px;
+      border: 2px dashed #667eea;
     }
 
-    .copy-btn {
-      background: #48bb78;
-      color: white;
-      border: none;
+    .guide-image code {
+      background: #2d3748;
+      color: #48bb78;
       padding: 8px 16px;
       border-radius: 6px;
-      cursor: pointer;
-      font-size: 13px;
+      font-size: 14px;
       font-weight: 600;
-      margin-left: 44px;
-      margin-top: 8px;
-    }
-
-    .copy-btn:hover {
-      background: #38a169;
-    }
-
-    .video-link {
       display: inline-block;
-      background: #667eea;
-      color: white;
-      padding: 12px 24px;
-      border-radius: 8px;
-      text-decoration: none;
-      font-weight: 600;
-      margin: 12px 0 12px 44px;
-      transition: all 0.2s;
     }
 
-    .video-link:hover {
-      background: #764ba2;
-      transform: translateY(-2px);
-    }
-
-    .instructions {
+    .tip {
       background: #fff3cd;
       border-left: 4px solid #ffc107;
       padding: 16px;
       border-radius: 8px;
       margin-top: 20px;
-      color: #856404;
       font-size: 14px;
+      color: #856404;
       line-height: 1.6;
     }
 
-    .instructions strong {
+    .tip strong {
       display: block;
       margin-bottom: 8px;
       font-size: 15px;
+    }
+
+    .demo-box {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-top: 16px;
+    }
+
+    .demo-box h4 {
+      color: #333;
+      font-size: 14px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+
+    .example {
+      background: #f8f9fa;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 12px;
+      font-family: monospace;
+    }
+
+    .arrow {
+      text-align: center;
+      font-size: 24px;
+      color: #667eea;
+      margin: 8px 0;
+    }
+
+    .highlight {
+      color: #667eea;
+      font-weight: 700;
+    }
+
+    .action-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 16px 32px;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      width: 100%;
+      margin-top: 20px;
+      transition: all 0.2s;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>🎬 YouTube Transcript Extractor</h1>
-    <p class="subtitle">Extract transcripts in 3 simple steps - no technical knowledge needed</p>
+    <h1>🎬 YouTube Transcript</h1>
+    <p class="subtitle"><strong>3 clicks.</strong> No extensions. No API. Just copy.</p>
     
-    <div class="input-group">
-      <input 
-        type="text" 
-        id="urlInput" 
-        placeholder="Paste YouTube URL here (e.g., https://youtube.com/watch?v=...)"
-        autocomplete="off"
-      >
-      <button class="btn" id="extractBtn">Get Instructions</button>
-    </div>
-
-    <div id="resultBox" class="result-box">
+    <div class="steps">
       <div class="step">
-        <span class="step-number">1</span>
-        <h3>Copy This Magic Code</h3>
-        <p>This code will extract the transcript. Click the button below to copy it:</p>
-        <div id="codeBox" class="code-box"></div>
-        <button class="copy-btn" id="copyCodeBtn">📋 Copy Code</button>
+        <div class="step-number">1</div>
+        <div class="step-content">
+          <h3>Open your YouTube video</h3>
+          <p>Go to any YouTube video in your browser</p>
+        </div>
       </div>
 
       <div class="step">
-        <span class="step-number">2</span>
-        <h3>Open Your YouTube Video</h3>
-        <p>Click this button to open the video in a new tab:</p>
-        <a id="videoLink" class="video-link" target="_blank">▶️ Open Video</a>
+        <div class="step-number">2</div>
+        <div class="step-content">
+          <h3>Click "Show transcript" button</h3>
+          <p>Click the <span class="highlight">⋮ (three dots)</span> below the video → Click <span class="highlight">"Show transcript"</span></p>
+        </div>
       </div>
 
       <div class="step">
-        <span class="step-number">3</span>
-        <h3>Paste & Run the Code</h3>
-        <p><strong>In the YouTube tab:</strong></p>
-        <p>1. Press <strong>F12</strong> (or right-click anywhere → "Inspect")</p>
-        <p>2. Click the <strong>"Console"</strong> tab at the top</p>
-        <p>3. Paste the code you copied (Ctrl+V or Cmd+V)</p>
-        <p>4. Press <strong>Enter</strong></p>
-        <p>5. The transcript will appear in a popup! ✨</p>
+        <div class="step-number">3</div>
+        <div class="step-content">
+          <h3>Copy and paste here</h3>
+          <p>Select all the transcript text → Copy (Ctrl+C) → Paste below</p>
+        </div>
       </div>
     </div>
 
-    <div class="instructions">
-      <strong>💡 How it works:</strong>
-      The code runs directly on YouTube's page and extracts captions from their own player data. It's completely safe and doesn't require any downloads, extensions, or accounts. The Console is a built-in browser tool that lets you run code on any webpage.
+    <div class="visual-guide">
+      <h3>📋 Paste Your Transcript Here</h3>
+      
+      <textarea 
+        id="transcriptInput" 
+        placeholder="Paste the YouTube transcript here (with timestamps like '0:00', '1:23', etc.)
+
+Example:
+0:00 Hello everyone welcome to this video
+0:15 Today we're going to talk about
+0:30 Some interesting topics and more..."
+        style="width: 100%; min-height: 200px; padding: 16px; border: 2px solid #e0e0e0; border-radius: 12px; font-size: 15px; font-family: inherit; line-height: 1.6; resize: vertical;"
+      ></textarea>
+
+      <button class="action-btn" id="cleanBtn">
+        ✨ Remove Timestamps & Clean Text
+      </button>
+
+      <div id="result" style="display: none; margin-top: 20px;">
+        <div style="background: #f8f9fa; padding: 16px; border-radius: 12px; margin-bottom: 12px;">
+          <div id="stats" style="font-size: 14px; font-weight: 600; color: #666;"></div>
+        </div>
+
+        <div style="background: #f8f9fa; border: 2px solid #e0e0e0; border-radius: 12px; padding: 20px; max-height: 300px; overflow-y: auto; margin-bottom: 12px;">
+          <div id="cleanedText" style="font-size: 15px; line-height: 1.8; color: #333; white-space: pre-wrap; word-wrap: break-word;"></div>
+        </div>
+
+        <div style="display: flex; gap: 12px;">
+          <button id="copyBtn" style="flex: 1; padding: 14px; background: #667eea; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+            📋 Copy Clean Text
+          </button>
+          <button id="downloadBtn" style="flex: 1; padding: 14px; background: #764ba2; color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; transition: all 0.2s;">
+            💾 Download TXT
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="demo-box">
+      <h4>Example: Before → After</h4>
+      <div class="example">0:00 Welcome to my channel<br>0:15 Today we will discuss AI<br>0:30 Let's get started</div>
+      <div class="arrow">↓</div>
+      <div class="example" style="background: #e8f5e9;">Welcome to my channel Today we will discuss AI Let's get started</div>
+    </div>
+
+    <div class="tip">
+      <strong>💡 Pro Tips:</strong>
+      • Works with any language YouTube supports<br>
+      • Removes ALL timestamp formats (0:00, 1:23:45, etc.)<br>
+      • Cleans up extra spaces and line breaks<br>
+      • No data sent to servers - 100% in your browser
     </div>
   </div>
 
   <script>
-    const urlInput = document.getElementById('urlInput');
-    const extractBtn = document.getElementById('extractBtn');
-    const resultBox = document.getElementById('resultBox');
-    const codeBox = document.getElementById('codeBox');
-    const copyCodeBtn = document.getElementById('copyCodeBtn');
-    const videoLink = document.getElementById('videoLink');
+    const input = document.getElementById('transcriptInput');
+    const cleanBtn = document.getElementById('cleanBtn');
+    const result = document.getElementById('result');
+    const stats = document.getElementById('stats');
+    const cleanedText = document.getElementById('cleanedText');
+    const copyBtn = document.getElementById('copyBtn');
+    const downloadBtn = document.getElementById('downloadBtn');
 
-    function extractVideoId(url) {
-      const patterns = [
-        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
-        /youtube\.com\/shorts\/([^&\n?#]+)/
-      ];
-      
-      for (const pattern of patterns) {
-        const match = url.match(pattern);
-        if (match) return match[1];
-      }
-      return null;
-    }
+    let processedText = '';
 
-    function getExtractionCode() {
-      return `(function(){if(document.getElementById('yt-transcript-overlay')){alert('Transcript overlay already exists!');return;}const o=document.createElement('div');o.id='yt-transcript-overlay';o.innerHTML='<div style="position:fixed;top:20px;right:20px;width:450px;max-height:85vh;background:white;border-radius:16px;box-shadow:0 20px 60px rgba(0,0,0,0.4);z-index:2147483647;display:flex;flex-direction:column;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif"><div style="padding:20px;border-bottom:2px solid #e0e0e0;display:flex;justify-content:space-between;align-items:center;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);border-radius:16px 16px 0 0"><h3 style="margin:0;font-size:18px;color:white;font-weight:700">📝 Transcript</h3><button id="yt-close-transcript" style="background:rgba(255,255,255,0.2);border:none;color:white;width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:24px;font-weight:bold;line-height:1;transition:all 0.2s" onmouseover="this.style.background=\\'rgba(255,255,255,0.3)\\'" onmouseout="this.style.background=\\'rgba(255,255,255,0.2)\\'">×</button></div><div style="padding:16px 20px;border-bottom:2px solid #e0e0e0;background:#f8f9fa"><div id="yt-transcript-stats" style="font-size:13px;color:#666;font-weight:600"></div></div><div id="yt-transcript-content" style="flex:1;overflow-y:auto;padding:20px;line-height:1.8;font-size:15px;color:#333"><div style="text-align:center;padding:60px 20px;color:#999"><div style="font-size:40px;margin-bottom:16px">⏳</div><div style="font-size:16px;font-weight:600">Extracting transcript...</div><div style="font-size:13px;margin-top:8px">This may take a few seconds</div></div></div><div style="padding:16px 20px;border-top:2px solid #e0e0e0;display:flex;gap:10px;background:#f8f9fa;border-radius:0 0 16px 16px"><button id="yt-copy-transcript" style="flex:1;padding:12px;background:#667eea;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;transition:all 0.2s" onmouseover="this.style.background=\\'#5568d3\\'" onmouseout="this.style.background=\\'#667eea\\'">📋 Copy</button><button id="yt-download-transcript" style="flex:1;padding:12px;background:#764ba2;color:white;border:none;border-radius:8px;cursor:pointer;font-size:14px;font-weight:700;transition:all 0.2s" onmouseover="this.style.background=\\'#653c8b\\'" onmouseout="this.style.background=\\'#764ba2\\'">💾 Download</button></div></div>';document.body.appendChild(o);document.getElementById('yt-close-transcript').onclick=()=>o.remove();let t='';function e(){try{let a=null;if(window.ytInitialPlayerResponse){a=window.ytInitialPlayerResponse;}else{const s=document.querySelectorAll('script');for(let i of s){const c=i.textContent;if(c.includes('ytInitialPlayerResponse')){const m=c.match(/var ytInitialPlayerResponse\\s*=\\s*({.+?});/);if(m){try{a=JSON.parse(m[1]);}catch(e){continue;}break;}}}}if(!a){document.getElementById('yt-transcript-content').innerHTML='<div style="text-align:center;padding:40px 20px;color:#d32f2f"><div style="font-size:40px;margin-bottom:16px">❌</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">Could not find video data</div><div style="font-size:13px;color:#666">Try refreshing the page and running the code again</div></div>';return;}const p=a.captions;if(!p){document.getElementById('yt-transcript-content').innerHTML='<div style="text-align:center;padding:40px 20px;color:#d32f2f"><div style="font-size:40px;margin-bottom:16px">❌</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">No captions available</div><div style="font-size:13px;color:#666">This video does not have captions/subtitles</div></div>';return;}const r=p.playerCaptionsTracklistRenderer?.captionTracks;if(!r||r.length===0){document.getElementById('yt-transcript-content').innerHTML='<div style="text-align:center;padding:40px 20px;color:#d32f2f"><div style="font-size:40px;margin-bottom:16px">❌</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">No caption tracks found</div><div style="font-size:13px;color:#666">This video may not have transcripts available</div></div>';return;}const k=r.find(x=>x.languageCode&&x.languageCode.startsWith('en'))||r[0];const u=k.baseUrl;fetch(u).then(res=>res.text()).then(xml=>{const pr=new DOMParser();const dc=pr.parseFromString(xml,'text/xml');const tn=dc.querySelectorAll('text');if(tn.length===0){document.getElementById('yt-transcript-content').innerHTML='<div style="text-align:center;padding:40px 20px;color:#d32f2f"><div style="font-size:40px;margin-bottom:16px">❌</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">No text found in captions</div><div style="font-size:13px;color:#666">The caption file appears to be empty</div></div>';return;}const ln=Array.from(tn).map(n=>{const txt=n.textContent||'';return txt.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&#39;/g,"'").replace(/&apos;/g,"'").replace(/\\n/g,' ').replace(/\\s+/g,' ').trim();}).filter(x=>x.length>0);t=ln.join(' ');const w=t.split(/\\s+/).filter(x=>x.length>0).length;const ch=t.length;document.getElementById('yt-transcript-stats').innerHTML='<span style="color:#667eea">●</span> Words: '+w.toLocaleString()+' <span style="margin:0 8px;color:#ddd">|</span> <span style="color:#764ba2">●</span> Characters: '+ch.toLocaleString();document.getElementById('yt-transcript-content').innerHTML='<div style="white-space:pre-wrap;word-wrap:break-word;line-height:1.8">'+t.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</div>';document.getElementById('yt-copy-transcript').onclick=()=>{navigator.clipboard.writeText(t).then(()=>{const b=document.getElementById('yt-copy-transcript');const og=b.innerHTML;b.innerHTML='✅ Copied!';b.style.background='#48bb78';setTimeout(()=>{b.innerHTML=og;b.style.background='#667eea';},2000);}).catch(()=>{alert('Failed to copy. Please select and copy the text manually.');});};document.getElementById('yt-download-transcript').onclick=()=>{try{const title=document.querySelector('h1.ytd-video-primary-info-renderer')?.textContent?.trim()||document.querySelector('yt-formatted-string.style-scope.ytd-watch-metadata')?.textContent?.trim()||'transcript';const clean=title.replace(/[^a-z0-9]/gi,'_').substring(0,50);const bl=new Blob([t],{type:'text/plain;charset=utf-8'});const ul=URL.createObjectURL(bl);const a=document.createElement('a');a.href=ul;a.download=clean+'.txt';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(ul);const b=document.getElementById('yt-download-transcript');const og=b.innerHTML;b.innerHTML='✅ Downloaded!';b.style.background='#48bb78';setTimeout(()=>{b.innerHTML=og;b.style.background='#764ba2';},2000);}catch(err){alert('Download failed: '+err.message);}};}).catch(err=>{document.getElementById('yt-transcript-content').innerHTML='<div style="text-align:center;padding:40px 20px;color:#d32f2f"><div style="font-size:40px;margin-bottom:16px">❌</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">Failed to fetch captions</div><div style="font-size:13px;color:#666">'+err.message+'</div></div>';});}catch(err){document.getElementById('yt-transcript-content').innerHTML='<div style="text-align:center;padding:40px 20px;color:#d32f2f"><div style="font-size:40px;margin-bottom:16px">❌</div><div style="font-size:16px;font-weight:600;margin-bottom:8px">Error</div><div style="font-size:13px;color:#666">'+err.message+'</div></div>';}}setTimeout(e,1000);})();console.log('%c✅ Transcript Extractor Loaded!','color:#48bb78;font-size:16px;font-weight:bold');console.log('%cCheck the top-right corner for the transcript overlay','color:#667eea;font-size:14px');`;
-    }
+    cleanBtn.addEventListener('click', () => {
+      const raw = input.value.trim();
 
-    extractBtn.addEventListener('click', () => {
-      const url = urlInput.value.trim();
-      
-      if (!url) {
-        alert('⚠️ Please enter a YouTube URL');
+      if (!raw) {
+        alert('⚠️ Please paste a transcript first!');
         return;
       }
 
-      const videoId = extractVideoId(url);
-      
-      if (!videoId) {
-        alert('⚠️ Invalid YouTube URL. Please enter a valid link.');
-        return;
-      }
+      // Remove timestamps: matches patterns like 0:00, 1:23, 12:34:56
+      let cleaned = raw.replace(/\d+:\d+(:\d+)?/g, '');
 
-      const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
-      const code = getExtractionCode();
+      // Remove extra whitespace and normalize
+      cleaned = cleaned
+        .replace(/\s+/g, ' ')
+        .replace(/\n+/g, ' ')
+        .trim();
 
-      codeBox.textContent = code;
-      videoLink.href = youtubeUrl;
-      resultBox.classList.add('show');
-      resultBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      // Calculate stats
+      const words = cleaned.split(/\s+/).filter(w => w.length > 0).length;
+      const chars = cleaned.length;
+
+      processedText = cleaned;
+
+      // Display results
+      stats.innerHTML = `<span style="color:#667eea">●</span> Words: ${words.toLocaleString()} <span style="margin:0 12px;color:#ddd">|</span> <span style="color:#764ba2">●</span> Characters: ${chars.toLocaleString()}`;
+      cleanedText.textContent = cleaned;
+      result.style.display = 'block';
+
+      // Scroll to result
+      result.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
     });
 
-    copyCodeBtn.addEventListener('click', () => {
-      const code = codeBox.textContent;
-      navigator.clipboard.writeText(code).then(() => {
-        const originalText = copyCodeBtn.textContent;
-        copyCodeBtn.textContent = '✅ Copied!';
-        copyCodeBtn.style.background = '#48bb78';
+    copyBtn.addEventListener('click', () => {
+      navigator.clipboard.writeText(processedText).then(() => {
+        const original = copyBtn.innerHTML;
+        copyBtn.innerHTML = '✅ Copied!';
+        copyBtn.style.background = '#48bb78';
         setTimeout(() => {
-          copyCodeBtn.textContent = originalText;
-          copyCodeBtn.style.background = '#48bb78';
+          copyBtn.innerHTML = original;
+          copyBtn.style.background = '#667eea';
         }, 2000);
       }).catch(() => {
-        alert('Failed to copy. Please select the code manually and copy it.');
+        alert('❌ Copy failed. Please select and copy manually.');
       });
     });
 
-    urlInput.addEventListener('keypress', (e) => {
-      if (e.key === 'Enter') {
-        extractBtn.click();
-      }
+    downloadBtn.addEventListener('click', () => {
+      const blob = new Blob([processedText], { type: 'text/plain' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'youtube-transcript.txt';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      const original = downloadBtn.innerHTML;
+      downloadBtn.innerHTML = '✅ Downloaded!';
+      downloadBtn.style.background = '#48bb78';
+      setTimeout(() => {
+        downloadBtn.innerHTML = original;
+        downloadBtn.style.background = '#764ba2';
+      }, 2000);
     });
 
-    urlInput.focus();
+    // Allow Enter in textarea
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && e.ctrlKey) {
+        cleanBtn.click();
+      }
+    });
   </script>
 </body>
 </html>
