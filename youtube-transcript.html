@@ -29,25 +29,9 @@
     });
 
     function openCleanTab(vid){
-      const extractor=`
-<script>
+      const code=`
 (()=>{
 const id="${vid}";
-let tryCount=0;
-const poll=()=>{
-  if(!location.pathname.startsWith("/watch")||!location.search.includes("v="+id)){
-    if(++tryCount<40)setTimeout(poll,250);      // 10 s max wait
-    return;
-  }
-  grab();
-};
-const grab=async()=>{
-  const cap=(await fetch('/api/timedtext?v='+id+'&lang=en&fmt=json').then(r=>r.json()).catch(()=>null))
-         || (await fetch('/api/timedtext?v='+id+'&fmt=json').then(r=>r.json()).catch(()=>null));
-  if(!cap){alert('No captions for this video');return;}
-  const txt=cap.events.map(e=>e.seg.map(s=>s.utf8).join(' ')).join('\\n\\n');
-  showOverlay(txt);
-};
 const showOverlay=(t)=>{
   if(document.getElementById('yt-txt-overlay'))return;
   const d=document.createElement('div');
@@ -70,17 +54,27 @@ const showOverlay=(t)=>{
   document.body.appendChild(d);
   d.querySelector('textarea').select();
 };
-function saveAs(str){const b=new Blob([str],{type:'text/plain'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download='transcript.txt';a.click();URL.revokeObjectURL(u);}
-poll();
-})();
-<\/script>`;
+function saveAs(str){const b=new Blob([str],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='transcript.txt';a.click();}
+
+const wait=()=>{
+  if(!location.search.includes("v="+id)){requestAnimationFrame(wait);return;}
+  fetch('/api/timedtext?v='+id+'&lang=en&fmt=json')
+    .then(r=>r.ok?r.json():fetch('/api/timedtext?v='+id+'&fmt=json').then(r=>r.ok?r.json():Promise.reject()))
+    .then(cap=>{
+       const txt=cap.events.map(e=>e.seg.map(s=>s.utf8).join(' ')).join('\\n\\n');
+       showOverlay(txt);
+     })
+    .catch(()=>alert('No captions found'));
+};
+wait();
+})();`;
 
       const newTab=window.open('about:blank','_blank');
       newTab.document.write(`
         <html><head><title>Loading…</title></head>
         <body style="background:#111;color:#eee;font-family:system-ui;padding:3rem">
           Redirecting to YouTube and grabbing transcript…
-          ${extractor}
+          <script src="data:text/javascript;base64,${btoa(code)}"><\/script>
           <script>location="https://www.youtube.com/watch?v=${vid}"<\/script>
         </body></html>
       `);
