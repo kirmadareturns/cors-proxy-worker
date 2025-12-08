@@ -1,85 +1,405 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>YouTube Transcript Extractor</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1">
   <style>
-    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#111;color:#eee;display:flex;flex-direction:column;align-items:center;padding:3rem}h1{font-size:1.4rem;margin-bottom:.5rem}p{margin:.3rem 0;font-size:.9rem;opacity:.7}input{width:100%;max-width:500px;padding:.6rem;font-size:1rem;border-radius:4px;border:none}#result{background:#1e1e1e;padding:1rem;border-radius:6px;margin-top:1.5rem;white-space:pre-wrap;width:100%;max-width:700px;max-height:60vh;overflow:auto;display:none}#result.active{display:block}
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      max-width: 600px;
+      width: 100%;
+    }
+
+    h1 {
+      color: #333;
+      margin-bottom: 10px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      font-size: 14px;
+    }
+
+    .input-group {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    input {
+      flex: 1;
+      padding: 14px 18px;
+      border: 2px solid #e0e0e0;
+      border-radius: 10px;
+      font-size: 15px;
+      transition: all 0.3s;
+    }
+
+    input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+
+    button {
+      padding: 14px 28px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+
+    button:active {
+      transform: translateY(0);
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .status {
+      padding: 12px 18px;
+      border-radius: 10px;
+      margin-top: 20px;
+      display: none;
+      font-size: 14px;
+    }
+
+    .status.info {
+      background: #e3f2fd;
+      color: #1976d2;
+      border-left: 4px solid #1976d2;
+    }
+
+    .status.success {
+      background: #e8f5e9;
+      color: #388e3c;
+      border-left: 4px solid #388e3c;
+    }
+
+    .status.error {
+      background: #ffebee;
+      color: #d32f2f;
+      border-left: 4px solid #d32f2f;
+    }
+
+    .instructions {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 10px;
+      margin-top: 30px;
+    }
+
+    .instructions h3 {
+      color: #333;
+      margin-bottom: 12px;
+      font-size: 16px;
+    }
+
+    .instructions ol {
+      padding-left: 20px;
+      color: #666;
+      line-height: 1.8;
+      font-size: 14px;
+    }
+
+    .instructions li {
+      margin-bottom: 8px;
+    }
+
+    .note {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 12px;
+      border-radius: 5px;
+      margin-top: 15px;
+      font-size: 13px;
+      color: #856404;
+    }
   </style>
 </head>
 <body>
-  <h1>YouTube Transcript Extractor</h1>
-  <p>Zero setup, zero backend, zero permissions.</p>
-  <input id="url" placeholder="Paste YouTube URL and press Enter">
-  <div id="result"></div>
+  <div class="container">
+    <h1>🎬 YouTube Transcript Extractor</h1>
+    <p class="subtitle">Extract transcripts directly from YouTube - no API keys, no extensions</p>
+    
+    <div class="input-group">
+      <input 
+        type="text" 
+        id="urlInput" 
+        placeholder="Paste YouTube URL here..."
+        autocomplete="off"
+      >
+      <button id="extractBtn">Extract</button>
+    </div>
+
+    <div id="status" class="status"></div>
+
+    <div class="instructions">
+      <h3>How it works:</h3>
+      <ol>
+        <li>Paste any YouTube video URL</li>
+        <li>Click "Extract" or press Enter</li>
+        <li>A new window opens with the video</li>
+        <li>The transcript appears in an overlay automatically</li>
+        <li>Copy, download, or view word/character counts</li>
+      </ol>
+      <div class="note">
+        <strong>Note:</strong> This works by injecting a script into YouTube's own page to access captions data. The new window must stay open briefly for extraction to complete.
+      </div>
+    </div>
+  </div>
 
   <script>
-    const input=document.getElementById('url');
-    const resultBox=document.getElementById('result');
+    const urlInput = document.getElementById('urlInput');
+    const extractBtn = document.getElementById('extractBtn');
+    const status = document.getElementById('status');
 
-    input.addEventListener('keydown',e=>{
-      if(e.key!=='Enter')return;
-      const url=e.target.value.trim();
-      if(!url.includes('youtube.com/watch') && !url.includes('youtu.be/')){
-        alert('Not a YouTube video URL');return;
+    function showStatus(message, type) {
+      status.textContent = message;
+      status.className = `status ${type}`;
+      status.style.display = 'block';
+      
+      if (type === 'success' || type === 'error') {
+        setTimeout(() => {
+          status.style.display = 'none';
+        }, 5000);
       }
-      const vid=(url.match(/[?&]v=([^&]+)/)||url.match(/youtu\.be\/([^?]+)/))[1];
-      openCleanTab(vid);
+    }
+
+    function extractVideoId(url) {
+      const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/,
+        /youtube\.com\/shorts\/([^&\n?#]+)/
+      ];
+      
+      for (const pattern of patterns) {
+        const match = url.match(pattern);
+        if (match) return match[1];
+      }
+      return null;
+    }
+
+    function generateInjectionScript() {
+      return `
+        (function() {
+          const overlay = document.createElement('div');
+          overlay.id = 'transcript-overlay';
+          overlay.innerHTML = \`
+            <div style="position: fixed; top: 20px; right: 20px; width: 400px; max-height: 80vh; background: white; border-radius: 12px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); z-index: 999999; display: flex; flex-direction: column; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
+              <div style="padding: 16px; border-bottom: 1px solid #e0e0e0; display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px 12px 0 0;">
+                <h3 style="margin: 0; font-size: 16px; color: white;">Transcript</h3>
+                <button id="close-transcript" style="background: rgba(255,255,255,0.2); border: none; color: white; width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center;">×</button>
+              </div>
+              <div style="padding: 16px; border-bottom: 1px solid #e0e0e0; background: #f8f9fa;">
+                <div id="transcript-stats" style="font-size: 12px; color: #666;"></div>
+              </div>
+              <div id="transcript-content" style="flex: 1; overflow-y: auto; padding: 16px; line-height: 1.6; font-size: 14px; color: #333;">
+                <div style="text-align: center; padding: 40px; color: #999;">Extracting transcript...</div>
+              </div>
+              <div style="padding: 12px; border-top: 1px solid #e0e0e0; display: flex; gap: 8px; background: #f8f9fa; border-radius: 0 0 12px 12px;">
+                <button id="copy-transcript" style="flex: 1; padding: 10px; background: #667eea; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">Copy</button>
+                <button id="download-transcript" style="flex: 1; padding: 10px; background: #764ba2; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">Download</button>
+              </div>
+            </div>
+          \`;
+          document.body.appendChild(overlay);
+
+          document.getElementById('close-transcript').onclick = () => overlay.remove();
+
+          let transcriptText = '';
+
+          function extractTranscript() {
+            try {
+              const ytInitialPlayerResponse = window.ytInitialPlayerResponse;
+              if (!ytInitialPlayerResponse) throw new Error('Player data not found');
+
+              const captions = ytInitialPlayerResponse.captions;
+              if (!captions) throw new Error('No captions available');
+
+              const tracks = captions.playerCaptionsTracklistRenderer?.captionTracks;
+              if (!tracks || tracks.length === 0) throw new Error('No caption tracks found');
+
+              const track = tracks[0];
+              const captionUrl = track.baseUrl;
+
+              fetch(captionUrl)
+                .then(res => res.text())
+                .then(xml => {
+                  const parser = new DOMParser();
+                  const doc = parser.parseFromString(xml, 'text/xml');
+                  const textNodes = doc.querySelectorAll('text');
+                  
+                  const lines = Array.from(textNodes).map(node => {
+                    return node.textContent
+                      .replace(/&amp;/g, '&')
+                      .replace(/&lt;/g, '<')
+                      .replace(/&gt;/g, '>')
+                      .replace(/&quot;/g, '"')
+                      .replace(/&#39;/g, "'")
+                      .replace(/\\n/g, ' ')
+                      .trim();
+                  });
+
+                  transcriptText = lines.join(' ');
+                  
+                  const words = transcriptText.split(/\\s+/).filter(w => w.length > 0).length;
+                  const chars = transcriptText.length;
+
+                  document.getElementById('transcript-stats').innerHTML = \`
+                    <strong>Words:</strong> \${words.toLocaleString()} | <strong>Characters:</strong> \${chars.toLocaleString()}
+                  \`;
+
+                  document.getElementById('transcript-content').innerHTML = \`
+                    <div style="white-space: pre-wrap; word-wrap: break-word;">\${transcriptText}</div>
+                  \`;
+
+                  document.getElementById('copy-transcript').onclick = () => {
+                    navigator.clipboard.writeText(transcriptText).then(() => {
+                      const btn = document.getElementById('copy-transcript');
+                      const orig = btn.textContent;
+                      btn.textContent = '✓ Copied!';
+                      setTimeout(() => btn.textContent = orig, 2000);
+                    });
+                  };
+
+                  document.getElementById('download-transcript').onclick = () => {
+                    const blob = new Blob([transcriptText], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'transcript.txt';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  };
+                })
+                .catch(err => {
+                  document.getElementById('transcript-content').innerHTML = \`
+                    <div style="color: #d32f2f; text-align: center; padding: 20px;">
+                      Failed to fetch captions: \${err.message}
+                    </div>
+                  \`;
+                });
+            } catch (err) {
+              document.getElementById('transcript-content').innerHTML = \`
+                <div style="color: #d32f2f; text-align: center; padding: 20px;">
+                  Error: \${err.message}
+                  <br><br>
+                  <small>This video may not have captions available.</small>
+                </div>
+              \`;
+            }
+          }
+
+          if (document.readyState === 'complete') {
+            setTimeout(extractTranscript, 1000);
+          } else {
+            window.addEventListener('load', () => setTimeout(extractTranscript, 1000));
+          }
+        })();
+      `;
+    }
+
+    function extractTranscript() {
+      const url = urlInput.value.trim();
+      
+      if (!url) {
+        showStatus('Please enter a YouTube URL', 'error');
+        return;
+      }
+
+      const videoId = extractVideoId(url);
+      
+      if (!videoId) {
+        showStatus('Invalid YouTube URL', 'error');
+        return;
+      }
+
+      showStatus('Opening YouTube and extracting transcript...', 'info');
+
+      const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+      const newWindow = window.open(youtubeUrl, '_blank');
+
+      if (!newWindow) {
+        showStatus('Please allow pop-ups for this site', 'error');
+        return;
+      }
+
+      const checkInterval = setInterval(() => {
+        try {
+          if (newWindow.closed) {
+            clearInterval(checkInterval);
+            showStatus('Window was closed', 'error');
+            return;
+          }
+
+          if (newWindow.document.readyState === 'complete') {
+            clearInterval(checkInterval);
+            
+            setTimeout(() => {
+              try {
+                const script = newWindow.document.createElement('script');
+                script.textContent = generateInjectionScript();
+                newWindow.document.body.appendChild(script);
+                
+                showStatus('Transcript extracted! Check the new window.', 'success');
+              } catch (err) {
+                showStatus('Could not inject script. Please check browser permissions.', 'error');
+              }
+            }, 2000);
+          }
+        } catch (err) {
+          // Cross-origin access blocked - window is still loading
+        }
+      }, 100);
+
+      setTimeout(() => {
+        clearInterval(checkInterval);
+      }, 30000);
+    }
+
+    extractBtn.addEventListener('click', extractTranscript);
+    
+    urlInput.addEventListener('keypress', (e) => {
+      if (e.key === 'Enter') {
+        extractTranscript();
+      }
     });
 
-    function openCleanTab(vid){
-      const code=`
-(()=>{
-const id="${vid}";
-const showOverlay=(t)=>{
-  if(document.getElementById('yt-txt-overlay'))return;
-  const d=document.createElement('div');
-  d.id='yt-txt-overlay';
-  d.innerHTML=\`
-    <style>
-      #yt-txt-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);color:#fff;z-index:9999;font-family:system-ui;padding:2rem;display:flex;flex-direction:column}
-      #yt-txt-overlay textarea{flex:1;width:100%;background:#1e1e1e;color:#fff;border:none;padding:1rem;font-size:14px;resize:none}
-      #yt-txt-overlay button{margin:4px;padding:6px 12px;background:#0af;border:none;color:#fff;border-radius:3px;cursor:pointer}
-      #yt-txt-overlay .bar{display:flex;gap:8px;margin-bottom:8px}
-    </style>
-    <div class=bar>
-      <button onclick='this.parentElement.parentElement.remove()'>Close</button>
-      <button onclick='document.execCommand("copy");alert("Copied")'>Copy</button>
-      <button onclick='saveAs(document.querySelector("#yt-txt-overlay textarea").value)'>Download</button>
-      <span style=margin-left:auto>Words: <b>\${t.split(/\\\\s+/).filter(Boolean).length}</b> | Chars: <b>\${t.length}</b></span>
-    </div>
-    <textarea readonly>\${t}</textarea>
-  \`;
-  document.body.appendChild(d);
-  d.querySelector('textarea').select();
-};
-function saveAs(str){const b=new Blob([str],{type:'text/plain'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='transcript.txt';a.click();}
-
-const wait=()=>{
-  if(!location.search.includes("v="+id)){requestAnimationFrame(wait);return;}
-  fetch('/api/timedtext?v='+id+'&lang=en&fmt=json')
-    .then(r=>r.ok?r.json():fetch('/api/timedtext?v='+id+'&fmt=json').then(r=>r.ok?r.json():Promise.reject()))
-    .then(cap=>{
-       const txt=cap.events.map(e=>e.seg.map(s=>s.utf8).join(' ')).join('\\n\\n');
-       showOverlay(txt);
-     })
-    .catch(()=>alert('No captions found'));
-};
-wait();
-})();`;
-
-      const newTab=window.open('about:blank','_blank');
-      newTab.document.write(`
-        <html><head><title>Loading…</title></head>
-        <body style="background:#111;color:#eee;font-family:system-ui;padding:3rem">
-          Redirecting to YouTube and grabbing transcript…
-          <script src="data:text/javascript;base64,${btoa(code)}"><\/script>
-          <script>location="https://www.youtube.com/watch?v=${vid}"<\/script>
-        </body></html>
-      `);
-      newTab.document.close();
-    }
+    urlInput.focus();
   </script>
 </body>
 </html>
