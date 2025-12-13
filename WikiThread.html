@@ -6,225 +6,356 @@
     <title>WikiFractal | Infinite Knowledge Tree</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&family=Inter:wght@300;400&display=swap');
 
-        /* --- Core Layout & Reset --- */
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
         body { 
-            background-color: #050505; 
+            background: radial-gradient(circle at 50% 50%, #0a0a0f 0%, #050505 100%);
             color: #e2e8f0; 
             font-family: 'Inter', sans-serif; 
-            overflow: hidden; /* Custom drag scroll */
+            overflow: hidden;
             width: 100vw; 
             height: 100vh;
         }
 
-        /* --- The Infinite Canvas --- */
+        /* Viewport & World */
         #viewport {
             width: 100%;
             height: 100%;
-            overflow: hidden; /* We move the inner world */
+            overflow: hidden;
             cursor: grab;
+            position: relative;
         }
-        #viewport:active { cursor: grabbing; }
+        #viewport.panning { cursor: grabbing; }
 
         #world {
             position: absolute;
-            top: 0; left: 0;
-            display: flex; /* Root alignment */
-            padding: 50vh 50px 50px 50px; /* Start in middle vertically */
+            display: flex;
+            padding: 50vh 100px 100px 100px;
             transform-origin: 0 0;
             will-change: transform;
+            transition: transform 0.05s linear;
         }
 
-        /* --- Recursive Tree Architecture --- */
-        /* A 'Node' contains the Card + The Container for its children */
+        /* Tree Structure */
         .node-wrapper {
             display: flex;
             flex-direction: row;
-            align-items: flex-start; /* Children align to top of parent */
-        }
-
-        /* The vertical stack of branches coming off a node */
-        .children-stack {
-            display: flex;
-            flex-direction: column;
-            justify-content: center; /* Center children relative to parent */
-            padding-left: 60px; /* Space for connector line */
+            align-items: center;
+            gap: 60px;
             position: relative;
         }
 
-        /* --- The Card (UI) --- */
+        .children-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 40px;
+            position: relative;
+        }
+
+        /* Connector Lines - Simplified & Working */
+        .node-wrapper > .children-stack::before {
+            content: '';
+            position: absolute;
+            left: -60px;
+            top: 0;
+            bottom: 0;
+            width: 60px;
+            height: 2px;
+            background: linear-gradient(90deg, #333 0%, #555 100%);
+            top: 50%;
+            transform: translateY(-1px);
+        }
+
+        .children-stack::after {
+            content: '';
+            position: absolute;
+            left: -60px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, #555 0%, #333 50%, #555 100%);
+        }
+
+        .children-stack > .node-wrapper:only-child::after {
+            display: none;
+        }
+
+        /* Card Styling */
         .card {
-            width: 400px;
-            max-height: 500px;
-            background: #111;
-            border: 1px solid #333;
-            border-radius: 12px;
+            width: 420px;
+            max-height: 600px;
+            background: linear-gradient(135deg, #1a1a1f 0%, #12121a 100%);
+            border: 1px solid #2a2a35;
+            border-radius: 16px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
             position: relative;
             z-index: 10;
-            transition: border-color 0.2s;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 
+                0 8px 32px rgba(0,0,0,0.4),
+                0 0 0 1px rgba(255,255,255,0.03) inset;
+            cursor: default;
         }
         
-        .card:hover { border-color: #3b82f6; }
-        .card.active { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
+        .card:hover { 
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+            box-shadow: 
+                0 12px 48px rgba(0,0,0,0.6),
+                0 0 0 1px #3b82f6 inset;
+        }
 
         .card-header {
-            padding: 16px;
-            background: #1a1a1a;
-            border-bottom: 1px solid #333;
-            border-radius: 12px 12px 0 0;
+            padding: 20px;
+            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 51, 234, 0.05) 100%);
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            border-radius: 16px 16px 0 0;
             position: relative;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-family: 'Space Grotesk', sans-serif;
+            color: white;
+            font-size: 1.1rem;
+            font-weight: 600;
+            line-height: 1.3;
+            flex: 1;
+        }
+
+        .card-close {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 8px;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        .card-close:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: #ef4444;
+            color: #ef4444;
         }
 
         .card-body {
             overflow-y: auto;
-            padding: 16px;
+            padding: 24px;
             font-size: 0.95rem;
-            line-height: 1.6;
-            color: #aaa;
+            line-height: 1.7;
+            color: #cbd5e1;
+            flex: 1;
         }
 
-        /* Custom scrollbar for cards */
-        .card-body::-webkit-scrollbar { width: 4px; }
-        .card-body::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
-
-        /* --- Connectors (The Tree Lines) --- */
-        /* Horizontal line from Parent to ChildrenStack */
-        .node-wrapper > .children-stack::before {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 50%;
-            width: 60px;
-            height: 2px;
-            background: #333;
-            transform: translateY(-50%);
+        .card-body::-webkit-scrollbar { width: 6px; }
+        .card-body::-webkit-scrollbar-track { background: transparent; }
+        .card-body::-webkit-scrollbar-thumb { 
+            background: #333; 
+            border-radius: 3px;
         }
+        .card-body::-webkit-scrollbar-thumb:hover { background: #444; }
 
-        /* Vertical line connecting siblings in the stack */
-        .children-stack > .node-wrapper {
-            position: relative;
+        /* Wiki Content */
+        .wiki-text p { margin-bottom: 1.2rem; }
+        .wiki-text a { 
+            color: #60a5fa; 
+            text-decoration: none; 
+            border-bottom: 1px dashed rgba(96, 165, 250, 0.3);
+            transition: all 0.2s;
+            cursor: pointer;
         }
-        /* The vertical spine */
-        .children-stack::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            top: 0;
-            bottom: 0;
-            width: 2px;
-            background: #333;
-            display: none; /* Only needed if we want full vertical lines, standard tree uses curves usually */
+        .wiki-text a:hover { 
+            background: rgba(59, 130, 246, 0.15);
+            border-bottom-color: #60a5fa;
+            padding: 0 2px;
+            border-radius: 3px;
+        }
+        .wiki-text h2, .wiki-text h3 { 
+            color: white; 
+            margin-top: 1.5rem; 
+            margin-bottom: 0.75rem;
+            font-weight: 600; 
+            font-family: 'Space Grotesk';
+        }
+        .wiki-text h2 { font-size: 1.3rem; }
+        .wiki-text h3 { font-size: 1.1rem; }
+        .wiki-text ul, .wiki-text ol { 
+            margin-left: 1.5rem; 
+            margin-bottom: 1rem; 
+        }
+        .wiki-text li { margin-bottom: 0.5rem; }
+        .wiki-text img { 
+            max-width: 100%; 
+            height: auto; 
+            border-radius: 8px; 
+            margin: 1rem 0;
+        }
+        .wiki-text table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.9rem;
+        }
+        .wiki-text td, .wiki-text th {
+            padding: 8px;
+            border: 1px solid #333;
         }
         
-        /* Curved Connectors Logic (CSS only approximation) */
-        .node-wrapper::before {
-            content: '';
-            position: absolute;
-            left: -60px;
-            top: 50%;
-            width: 20px;
-            height: 2px;
-            background: #333;
-            display: none; /* Root has no connector */
-        }
-        /* Complex curves are hard in pure CSS flexbox, using straight orthogonal lines */
-        .children-stack > .node-wrapper::before {
-            display: block; /* Connector for child */
-            width: 40px;
-            left: -40px;
-        }
-        
-        /* Vertical connector lines for the tree structure */
-        .children-stack > .node-wrapper::after {
-            content: '';
-            position: absolute;
-            left: -40px;
-            width: 2px;
-            background: #333;
+        /* Hide wiki clutter */
+        .infobox, .sidebar, .navbox, .metadata, 
+        .ambox, .mbox, .hatnote { display: none !important; }
+
+        /* Loading State */
+        .loading-pulse {
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: #555;
+            gap: 12px;
         }
 
-        /* Logic to draw the vertical bracket */
-        .children-stack > .node-wrapper:first-child::after {
-            top: 50%; height: 50%; /* Go down from middle */
-        }
-        .children-stack > .node-wrapper:last-child::after {
-            top: 0; height: 50%; /* Go up from middle */
-        }
-        .children-stack > .node-wrapper:not(:first-child):not(:last-child)::after {
-            top: 0; height: 100%; /* Full height */
-        }
-        /* Single child needs no vertical line, just horizontal */
-        .children-stack > .node-wrapper:only-child::after {
-            display: none;
-        }
-
-
-        /* --- Search & Typeahead --- */
+        /* Search UI */
         .search-container {
             position: fixed;
             top: 2rem;
             left: 50%;
             transform: translateX(-50%);
             z-index: 100;
-            width: 450px;
+            width: 500px;
         }
         
         .search-box {
             background: rgba(15,15,20,0.95);
-            backdrop-filter: blur(12px);
-            border: 1px solid #333;
-            border-radius: 12px;
+            backdrop-filter: blur(20px);
+            border: 1px solid #2a2a35;
+            border-radius: 16px;
             display: flex;
             align-items: center;
-            padding: 0 16px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
-            height: 50px;
-            transition: all 0.2s;
+            padding: 0 20px;
+            box-shadow: 
+                0 10px 40px rgba(0,0,0,0.6),
+                0 0 0 1px rgba(255,255,255,0.05) inset;
+            height: 56px;
+            transition: all 0.3s;
         }
-        .search-box:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        .search-box:focus-within { 
+            border-color: #3b82f6; 
+            box-shadow: 
+                0 0 0 3px rgba(59, 130, 246, 0.2),
+                0 10px 40px rgba(0,0,0,0.6);
+        }
         
+        .search-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: white;
+            width: 100%;
+            height: 100%;
+            font-size: 0.95rem;
+            font-weight: 500;
+        }
+        .search-input::placeholder { color: #555; }
+
         .suggestions {
             margin-top: 8px;
-            background: #111;
-            border: 1px solid #333;
+            background: rgba(15,15,20,0.98);
+            backdrop-filter: blur(20px);
+            border: 1px solid #2a2a35;
             border-radius: 12px;
             overflow: hidden;
-            display: none; /* Hidden by default */
+            display: none;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
         .suggestions.active { display: block; }
         
         .suggestion-item {
-            padding: 10px 16px;
+            padding: 14px 20px;
             cursor: pointer;
-            color: #ccc;
-            border-bottom: 1px solid #222;
+            color: #cbd5e1;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
             font-size: 0.9rem;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
-        .suggestion-item:hover { background: #1f2937; color: white; }
+        .suggestion-item:hover { 
+            background: rgba(59, 130, 246, 0.1);
+            color: white;
+        }
         .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-item span { color: #666; font-size: 0.8rem; margin-left: 8px; font-style: italic;}
+        .suggestion-desc { 
+            color: #666; 
+            font-size: 0.8rem;
+            font-style: italic;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
 
-        /* --- Wiki Content Styles --- */
-        .wiki-text p { margin-bottom: 1rem; }
-        .wiki-text a { color: #60a5fa; text-decoration: none; border-bottom: 1px dashed rgba(96, 165, 250, 0.4); }
-        .wiki-text a:hover { background: rgba(59, 130, 246, 0.2); }
-        .wiki-text h2 { color: white; margin-top: 1rem; font-weight: 700; font-family: 'Space Grotesk'; }
-        
-        .loading-pulse {
-            height: 100%; width: 100%;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: #444;
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            z-index: 90;
+        }
+
+        .control-btn {
+            width: 48px;
+            height: 48px;
+            background: rgba(15,15,20,0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid #2a2a35;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .control-btn:hover {
+            background: rgba(59, 130, 246, 0.2);
+            border-color: #3b82f6;
+            transform: translateY(-2px);
+        }
+        .control-btn:active { transform: translateY(0); }
+
+        .hint {
+            position: fixed;
+            bottom: 2rem;
+            left: 2rem;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            color: #60a5fa;
+            z-index: 90;
+            backdrop-filter: blur(10px);
         }
     </style>
 </head>
@@ -232,46 +363,64 @@
 
     <div class="search-container">
         <div class="search-box">
-            <i class="ri-search-2-line text-gray-500 mr-3"></i>
-            <input type="text" id="searchInput" placeholder="Search Wikipedia..." 
-                   class="bg-transparent border-none outline-none text-white w-full h-full text-sm font-medium placeholder-gray-600" autocomplete="off">
-            <div id="loader" class="hidden animate-spin rounded-full h-4 w-4 border-2 border-gray-600 border-t-white"></div>
+            <i class="ri-search-2-line text-gray-500 mr-3 text-lg"></i>
+            <input type="text" id="searchInput" class="search-input" 
+                   placeholder="Search Wikipedia..." autocomplete="off">
+            <i id="loader" class="ri-loader-4-line animate-spin text-gray-500 hidden"></i>
         </div>
         <div id="suggestions" class="suggestions"></div>
     </div>
 
     <div id="viewport">
-        <div id="world">
-            </div>
+        <div id="world"></div>
     </div>
 
-    <div class="fixed bottom-6 right-6 text-xs text-gray-600 font-mono pointer-events-none select-none">
-        DRAG TO PAN • SCROLL TO ZOOM (COMING SOON)
+    <div class="controls">
+        <button class="control-btn" onclick="zoomIn()" title="Zoom In">
+            <i class="ri-zoom-in-line text-white text-xl"></i>
+        </button>
+        <button class="control-btn" onclick="zoomOut()" title="Zoom Out">
+            <i class="ri-zoom-out-line text-white text-xl"></i>
+        </button>
+        <button class="control-btn" onclick="resetView()" title="Reset View">
+            <i class="ri-focus-2-line text-white text-xl"></i>
+        </button>
+    </div>
+
+    <div class="hint">
+        <i class="ri-information-line mr-2"></i>
+        Drag to pan · Scroll to zoom · Click links to branch
     </div>
 
     <script>
-        // --- State Management ---
         const world = document.getElementById('world');
         const viewport = document.getElementById('viewport');
         const searchInput = document.getElementById('searchInput');
         const suggestionsBox = document.getElementById('suggestions');
         
-        // --- Wikipedia API ---
         const WIKI_API = 'https://en.wikipedia.org/w/api.php?origin=*';
 
-        // 1. Autocomplete
+        // View state
+        let transX = 0, transY = 0, scale = 1;
+
+        // Wikipedia API
         async function fetchSuggestions(query) {
             if(query.length < 2) return [];
-            const url = `${WIKI_API}&action=opensearch&search=${encodeURIComponent(query)}&limit=5&namespace=0&format=json`;
-            const res = await fetch(url);
-            const data = await res.json();
-            // Opensearch returns [query, [titles], [descriptions], [urls]]
-            return data[1].map((title, i) => ({ title, desc: data[2][i] }));
+            const url = `${WIKI_API}&action=opensearch&search=${encodeURIComponent(query)}&limit=6&namespace=0&format=json`;
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                return data[1].map((title, i) => ({ 
+                    title, 
+                    desc: data[2][i] 
+                }));
+            } catch(e) {
+                return [];
+            }
         }
 
-        // 2. Fetch Page Content
         async function fetchPage(title) {
-            const url = `${WIKI_API}&action=parse&page=${encodeURIComponent(title)}&format=json&prop=text|displaytitle&redirects=1&disableeditsection=1&mobileformat=1`;
+            const url = `${WIKI_API}&action=parse&page=${encodeURIComponent(title)}&format=json&prop=text|displaytitle&redirects=1&disableeditsection=1`;
             try {
                 const res = await fetch(url);
                 const data = await res.json();
@@ -282,104 +431,106 @@
                     html: data.parse.text['*']
                 };
             } catch (e) {
-                console.error(e);
+                console.error('Fetch error:', e);
                 return null;
             }
         }
 
-        // --- Core Tree Engine ---
-
-        // We don't store a JS Tree object. We use the DOM as the state.
-        // Hierarchy:
-        // .node-wrapper
-        //   > .card
-        //   > .children-stack (Flex-col)
-        //       > .node-wrapper
-        //       > .node-wrapper
-
+        // Tree Building
         function createNode(title, parentStack = null) {
-            // 1. Create Layout Elements
             const wrapper = document.createElement('div');
             wrapper.className = 'node-wrapper';
 
             const card = document.createElement('div');
             card.className = 'card';
             
-            // Loading State
             card.innerHTML = `
                 <div class="card-header">
-                    <h3 class="text-white font-bold font-mono text-sm truncate pr-4">${title}</h3>
-                    <div class="absolute top-4 right-4 text-xs text-gray-600">LOADING</div>
+                    <div class="card-title">${title}</div>
+                    <div class="text-xs text-gray-600 mt-1">Loading...</div>
                 </div>
-                <div class="card-body h-64">
+                <div class="card-body">
                     <div class="loading-pulse">
-                        <i class="ri-loader-4-line animate-spin text-2xl"></i>
+                        <i class="ri-loader-4-line animate-spin text-3xl"></i>
+                        <span class="text-sm">Fetching content...</span>
                     </div>
                 </div>
             `;
 
-            // Append Structure
             wrapper.appendChild(card);
             
-            // Where do we put this new node?
             if (!parentStack) {
-                // It's the Root
-                world.innerHTML = ''; // Clear world
+                world.innerHTML = '';
                 world.appendChild(wrapper);
+                // Reset view to center on new root
+                setTimeout(() => resetView(), 100);
             } else {
-                // It's a branch
                 parentStack.appendChild(wrapper);
             }
 
-            // Animate In
             gsap.fromTo(wrapper, 
-                { opacity: 0, x: -20 }, 
-                { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }
+                { opacity: 0, x: -30, scale: 0.95 }, 
+                { opacity: 1, x: 0, scale: 1, duration: 0.5, ease: "back.out(1.2)" }
             );
 
-            // Fetch Data
             fetchPage(title).then(data => {
                 if(!data) {
-                    card.querySelector('.card-body').innerHTML = '<p class="text-red-500">Error loading page.</p>';
+                    card.innerHTML = `
+                        <div class="card-header">
+                            <div class="card-title text-red-400">Error</div>
+                        </div>
+                        <div class="card-body">
+                            <p class="text-red-400">Could not load "${title}"</p>
+                        </div>
+                    `;
                     return;
                 }
 
-                // Clean & Render
                 const cleanHTML = DOMPurify.sanitize(data.html, {
-                    FORBID_TAGS: ['style', 'script', 'link', 'iframe', 'frame'],
+                    FORBID_TAGS: ['style', 'script', 'iframe'],
                     FORBID_ATTR: ['style', 'onclick']
                 });
 
                 card.innerHTML = `
-                    <div class="card-header flex justify-between items-center bg-gray-900">
-                        <h3 class="text-white font-bold font-['Space_Grotesk'] text-lg leading-tight w-10/12">${data.title}</h3>
-                        <button class="text-gray-500 hover:text-white" onclick="this.closest('.node-wrapper').remove()"><i class="ri-close-line"></i></button>
+                    <div class="card-header">
+                        <div class="card-title">${data.title}</div>
+                        <button class="card-close" onclick="removeNode(this)">
+                            <i class="ri-close-line"></i>
+                        </button>
                     </div>
                     <div class="card-body wiki-text">
                         ${cleanHTML}
                     </div>
                 `;
 
-                // Intercept Links
+                // Intercept links
                 const links = card.querySelectorAll('a');
                 links.forEach(link => {
                     const href = link.getAttribute('href');
                     if(href && href.startsWith('/wiki/')) {
+                        const targetTitle = href.replace('/wiki/', '').split('#')[0];
+                        
+                        // Skip special pages
+                        if(targetTitle.includes(':')) {
+                            link.style.opacity = '0.5';
+                            link.style.cursor = 'not-allowed';
+                            return;
+                        }
+                        
                         link.onclick = (e) => {
                             e.preventDefault();
-                            const targetTitle = href.replace('/wiki/', '');
+                            e.stopPropagation();
                             spawnChild(wrapper, targetTitle);
-                        }
-                    } else {
+                        };
+                    } else if(href && href.startsWith('http')) {
                         link.target = "_blank";
-                        link.classList.add('opacity-50');
+                        link.classList.add('opacity-60');
                     }
                 });
             });
         }
 
         function spawnChild(parentNodeWrapper, title) {
-            // Does this parent already have a children stack?
             let stack = parentNodeWrapper.querySelector('.children-stack');
             
             if (!stack) {
@@ -388,11 +539,20 @@
                 parentNodeWrapper.appendChild(stack);
             }
 
-            // Create new node in that stack
             createNode(title, stack);
         }
 
-        // --- Search Logic ---
+        function removeNode(btn) {
+            const wrapper = btn.closest('.node-wrapper');
+            gsap.to(wrapper, {
+                opacity: 0,
+                scale: 0.9,
+                duration: 0.3,
+                onComplete: () => wrapper.remove()
+            });
+        }
+
+        // Search
         let debounceTimer;
         
         searchInput.addEventListener('input', (e) => {
@@ -404,17 +564,18 @@
                 return;
             }
 
+            document.getElementById('loader').classList.remove('hidden');
+            
             debounceTimer = setTimeout(async () => {
-                document.getElementById('loader').classList.remove('hidden');
                 const results = await fetchSuggestions(query);
                 document.getElementById('loader').classList.add('hidden');
-                
                 renderSuggestions(results);
             }, 300);
         });
 
         function renderSuggestions(items) {
             suggestionsBox.innerHTML = '';
+            
             if(items.length === 0) {
                 suggestionsBox.classList.remove('active');
                 return;
@@ -423,33 +584,46 @@
             items.forEach(item => {
                 const div = document.createElement('div');
                 div.className = 'suggestion-item';
-                div.innerHTML = `${item.title} <span>${item.desc ? item.desc.substring(0, 40) + '...' : ''}</span>`;
+                div.innerHTML = `
+                    <span>${item.title}</span>
+                    <span class="suggestion-desc">${item.desc || ''}</span>
+                `;
                 div.onclick = () => {
-                    createNode(item.title); // Start new root
+                    createNode(item.title);
                     suggestionsBox.classList.remove('active');
                     searchInput.value = '';
                 };
                 suggestionsBox.appendChild(div);
             });
+            
             suggestionsBox.classList.add('active');
         }
 
-        // --- Viewport Physics (Infinite Pan) ---
+        // Close suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                suggestionsBox.classList.remove('active');
+            }
+        });
+
+        // Pan & Zoom
         let isPanning = false;
         let startX = 0, startY = 0;
-        let transX = 0, transY = 0;
 
         viewport.addEventListener('mousedown', e => {
-            if(e.target.closest('.card') || e.target.closest('.search-container')) return;
+            // Don't pan if clicking on cards or search
+            if(e.target.closest('.card') || e.target.closest('.search-container') || 
+               e.target.closest('.controls')) return;
+            
             isPanning = true;
             startX = e.clientX - transX;
             startY = e.clientY - transY;
-            viewport.style.cursor = 'grabbing';
+            viewport.classList.add('panning');
         });
 
         window.addEventListener('mouseup', () => {
             isPanning = false;
-            viewport.style.cursor = 'grab';
+            viewport.classList.remove('panning');
         });
 
         window.addEventListener('mousemove', e => {
@@ -457,12 +631,81 @@
             e.preventDefault();
             transX = e.clientX - startX;
             transY = e.clientY - startY;
-            world.style.transform = `translate(${transX}px, ${transY}px)`;
+            updateTransform();
         });
 
-        // Initialize
-        createNode("Fractal"); 
+        // Zoom with scroll
+        viewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            
+            const delta = e.deltaY * -0.001;
+            const newScale = Math.min(Math.max(0.3, scale + delta), 2);
+            
+            // Zoom towards cursor
+            const rect = viewport.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const worldX = (mouseX - transX) / scale;
+            const worldY = (mouseY - transY) / scale;
+            
+            scale = newScale;
+            
+            transX = mouseX - worldX * scale;
+            transY = mouseY - worldY * scale;
+            
+            updateTransform();
+        }, { passive: false });
 
+        function updateTransform() {
+            world.style.transform = `translate(${transX}px, ${transY}px) scale(${scale})`;
+        }
+
+        // Controls
+        function zoomIn() {
+            scale = Math.min(2, scale + 0.2);
+            updateTransform();
+        }
+
+        function zoomOut() {
+            scale = Math.max(0.3, scale - 0.2);
+            updateTransform();
+        }
+
+        function resetView() {
+            transX = 0;
+            transY = 0;
+            scale = 1;
+            gsap.to(world, {
+                x: transX,
+                y: transY,
+                scale: scale,
+                duration: 0.5,
+                ease: "power2.inOut",
+                onUpdate: () => {
+                    const style = world.style.transform;
+                    const match = style.match(/translate\(([^,]+),\s*([^)]+)\)/);
+                    if(match) {
+                        transX = parseFloat(match[1]);
+                        transY = parseFloat(match[2]);
+                    }
+                }
+            });
+        }
+
+        // Initialize
+        createNode("Fractal");
+
+        // Hide hint after 5s
+        setTimeout(() => {
+            const hint = document.querySelector('.hint');
+            gsap.to(hint, { 
+                opacity: 0, 
+                y: 20, 
+                duration: 0.5, 
+                onComplete: () => hint.remove() 
+            });
+        }, 6000);
     </script>
 </body>
 </html>
