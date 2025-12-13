@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiThread | Live</title>
+    <title>WikiFractal | Infinite Knowledge Tree</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollToPlugin.min.js"></script>
@@ -13,393 +13,456 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&family=Inter:wght@300;400&display=swap');
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        
+        /* --- Core Layout & Reset --- */
+        * { box-sizing: border-box; }
         body { 
             background-color: #050505; 
             color: #e2e8f0; 
             font-family: 'Inter', sans-serif; 
-            overflow-x: auto;
-            overflow-y: hidden;
+            overflow: hidden; /* Custom drag scroll */
+            width: 100vw; 
             height: 100vh;
         }
 
-        /* Hide standard scrollbars on body */
-        body::-webkit-scrollbar { height: 8px; }
-        body::-webkit-scrollbar-track { background: #0a0a0a; }
-        body::-webkit-scrollbar-thumb { background: #222; border-radius: 4px; }
+        /* --- The Infinite Canvas --- */
+        #viewport {
+            width: 100%;
+            height: 100%;
+            overflow: hidden; /* We move the inner world */
+            cursor: grab;
+        }
+        #viewport:active { cursor: grabbing; }
 
-        .thread-container {
-            display: flex;
-            height: 100vh;
-            width: max-content;
-            padding: 0 50vw 0 2rem;
-            align-items: center;
-            gap: 0;
+        #world {
+            position: absolute;
+            top: 0; left: 0;
+            display: flex; /* Root alignment */
+            padding: 50vh 50px 50px 50px; /* Start in middle vertically */
+            transform-origin: 0 0;
+            will-change: transform;
         }
 
-        .pane-wrapper {
+        /* --- Recursive Tree Architecture --- */
+        /* A 'Node' contains the Card + The Container for its children */
+        .node-wrapper {
             display: flex;
-            align-items: center;
-            flex-shrink: 0;
+            flex-direction: row;
+            align-items: flex-start; /* Children align to top of parent */
         }
 
-        .pane {
-            width: 500px;
-            height: 85vh;
-            background: rgba(20, 20, 23, 0.95);
-            border: 1px solid rgba(255, 255, 255, 0.08);
-            border-radius: 24px;
+        /* The vertical stack of branches coming off a node */
+        .children-stack {
             display: flex;
             flex-direction: column;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-            overflow: hidden;
-            opacity: 0; 
-            transform: translateY(30px);
+            justify-content: center; /* Center children relative to parent */
+            padding-left: 60px; /* Space for connector line */
+            position: relative;
         }
 
-        .pane-header {
-            padding: 24px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            background: rgba(255,255,255,0.02);
+        /* --- The Card (UI) --- */
+        .card {
+            width: 400px;
+            max-height: 500px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 12px;
             flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+            transition: border-color 0.2s;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        
+        .card:hover { border-color: #3b82f6; }
+        .card.active { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3); }
+
+        .card-header {
+            padding: 16px;
+            background: #1a1a1a;
+            border-bottom: 1px solid #333;
+            border-radius: 12px 12px 0 0;
+            position: relative;
         }
 
-        .pane-content {
-            flex: 1;
+        .card-body {
             overflow-y: auto;
-            padding: 30px;
-            font-size: 1.05rem;
-            line-height: 1.7;
-            color: #cbd5e1;
+            padding: 16px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            color: #aaa;
+        }
+
+        /* Custom scrollbar for cards */
+        .card-body::-webkit-scrollbar { width: 4px; }
+        .card-body::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        /* --- Connectors (The Tree Lines) --- */
+        /* Horizontal line from Parent to ChildrenStack */
+        .node-wrapper > .children-stack::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            width: 60px;
+            height: 2px;
+            background: #333;
+            transform: translateY(-50%);
+        }
+
+        /* Vertical line connecting siblings in the stack */
+        .children-stack > .node-wrapper {
+            position: relative;
+        }
+        /* The vertical spine */
+        .children-stack::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #333;
+            display: none; /* Only needed if we want full vertical lines, standard tree uses curves usually */
         }
         
-        /* Custom Scrollbar for pane content */
-        .pane-content::-webkit-scrollbar { width: 6px; }
-        .pane-content::-webkit-scrollbar-track { background: transparent; }
-        .pane-content::-webkit-scrollbar-thumb { background-color: #333; border-radius: 3px; }
-
-        /* Wikipedia Content Styling */
-        .wiki-content p { margin-bottom: 1.5rem; }
-        .wiki-content a { 
-            color: #60a5fa; 
-            text-decoration: none; 
-            border-bottom: 1px dashed rgba(96, 165, 250, 0.4); 
-            transition: all 0.2s;
-            cursor: pointer;
+        /* Curved Connectors Logic (CSS only approximation) */
+        .node-wrapper::before {
+            content: '';
+            position: absolute;
+            left: -60px;
+            top: 50%;
+            width: 20px;
+            height: 2px;
+            background: #333;
+            display: none; /* Root has no connector */
         }
-        .wiki-content a:hover { 
-            background: rgba(59, 130, 246, 0.15); 
-            border-radius: 4px;
-            padding: 0 2px;
+        /* Complex curves are hard in pure CSS flexbox, using straight orthogonal lines */
+        .children-stack > .node-wrapper::before {
+            display: block; /* Connector for child */
+            width: 40px;
+            left: -40px;
         }
-        .wiki-content h2, .wiki-content h3 {
-            font-family: 'Space Grotesk', sans-serif;
-            color: white;
-            margin-top: 2rem;
-            margin-bottom: 0.75rem;
-            font-weight: 600;
-        }
-        .wiki-content h2 { font-size: 1.5rem; }
-        .wiki-content h3 { font-size: 1.25rem; }
-        .wiki-content ul, .wiki-content ol { margin-left: 1.5rem; margin-bottom: 1rem; }
-        .wiki-content li { margin-bottom: 0.5rem; }
-        .wiki-content img { max-width: 100%; height: auto; border-radius: 8px; margin: 1rem 0; }
         
-        /* Hide wiki clutter */
-        .infobox, .sidebar, .hatnote, .reference, .mw-editsection, 
-        .navbox, .metadata, .ambox { display: none !important; }
-
-        .loading-skeleton {
-            background: linear-gradient(90deg, #1f1f23 25%, #2a2a30 50%, #1f1f23 75%);
-            background-size: 200% 100%;
-            animation: loading 1.5s infinite;
-            border-radius: 4px;
-            margin-bottom: 10px;
-        }
-        @keyframes loading { 
-            0% { background-position: 200% 0; } 
-            100% { background-position: -200% 0; } 
+        /* Vertical connector lines for the tree structure */
+        .children-stack > .node-wrapper::after {
+            content: '';
+            position: absolute;
+            left: -40px;
+            width: 2px;
+            background: #333;
         }
 
-        .search-overlay {
+        /* Logic to draw the vertical bracket */
+        .children-stack > .node-wrapper:first-child::after {
+            top: 50%; height: 50%; /* Go down from middle */
+        }
+        .children-stack > .node-wrapper:last-child::after {
+            top: 0; height: 50%; /* Go up from middle */
+        }
+        .children-stack > .node-wrapper:not(:first-child):not(:last-child)::after {
+            top: 0; height: 100%; /* Full height */
+        }
+        /* Single child needs no vertical line, just horizontal */
+        .children-stack > .node-wrapper:only-child::after {
+            display: none;
+        }
+
+
+        /* --- Search & Typeahead --- */
+        .search-container {
             position: fixed;
             top: 2rem;
             left: 50%;
             transform: translateX(-50%);
             z-index: 100;
-            width: 400px;
-            background: rgba(10,10,10,0.9);
-            backdrop-filter: blur(20px);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 50px;
-            padding: 8px 20px;
-            display: flex;
-            align-items: center;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-            transition: all 0.3s;
-        }
-        .search-overlay:focus-within { 
-            border-color: #3b82f6; 
             width: 450px;
-            background: rgba(10,10,10,0.95);
         }
         
-        .connector-line { 
-            width: 40px; 
-            height: 2px; 
-            background: linear-gradient(90deg, #333, #444);
-            flex-shrink: 0;
-            margin: 0 10px;
-        }
-
-        .drag-hint {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            padding: 12px 20px;
+        .search-box {
+            background: rgba(15,15,20,0.95);
+            backdrop-filter: blur(12px);
+            border: 1px solid #333;
             border-radius: 12px;
-            font-size: 0.875rem;
-            color: #60a5fa;
-            z-index: 50;
-            animation: fadeIn 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
+            height: 50px;
+            transition: all 0.2s;
         }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
+        .search-box:focus-within { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
+        
+        .suggestions {
+            margin-top: 8px;
+            background: #111;
+            border: 1px solid #333;
+            border-radius: 12px;
+            overflow: hidden;
+            display: none; /* Hidden by default */
+        }
+        .suggestions.active { display: block; }
+        
+        .suggestion-item {
+            padding: 10px 16px;
+            cursor: pointer;
+            color: #ccc;
+            border-bottom: 1px solid #222;
+            font-size: 0.9rem;
+        }
+        .suggestion-item:hover { background: #1f2937; color: white; }
+        .suggestion-item:last-child { border-bottom: none; }
+        .suggestion-item span { color: #666; font-size: 0.8rem; margin-left: 8px; font-style: italic;}
+
+        /* --- Wiki Content Styles --- */
+        .wiki-text p { margin-bottom: 1rem; }
+        .wiki-text a { color: #60a5fa; text-decoration: none; border-bottom: 1px dashed rgba(96, 165, 250, 0.4); }
+        .wiki-text a:hover { background: rgba(59, 130, 246, 0.2); }
+        .wiki-text h2 { color: white; margin-top: 1rem; font-weight: 700; font-family: 'Space Grotesk'; }
+        
+        .loading-pulse {
+            height: 100%; width: 100%;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            color: #444;
         }
     </style>
 </head>
 <body>
 
-    <div id="canvas" class="thread-container"></div>
-
-    <div class="search-overlay">
-        <i class="ri-search-line text-gray-500 mr-3 text-lg"></i>
-        <input type="text" id="searchInput" placeholder="Start a thread (e.g., 'Black Hole')" 
-               class="bg-transparent border-none outline-none text-white w-full h-8 text-sm placeholder-gray-600">
+    <div class="search-container">
+        <div class="search-box">
+            <i class="ri-search-2-line text-gray-500 mr-3"></i>
+            <input type="text" id="searchInput" placeholder="Search Wikipedia..." 
+                   class="bg-transparent border-none outline-none text-white w-full h-full text-sm font-medium placeholder-gray-600" autocomplete="off">
+            <div id="loader" class="hidden animate-spin rounded-full h-4 w-4 border-2 border-gray-600 border-t-white"></div>
+        </div>
+        <div id="suggestions" class="suggestions"></div>
     </div>
 
-    <div class="drag-hint">
-        <i class="ri-drag-move-line mr-2"></i>
-        Click & drag to navigate · Click links to branch
+    <div id="viewport">
+        <div id="world">
+            </div>
+    </div>
+
+    <div class="fixed bottom-6 right-6 text-xs text-gray-600 font-mono pointer-events-none select-none">
+        DRAG TO PAN • SCROLL TO ZOOM (COMING SOON)
     </div>
 
     <script>
-        gsap.registerPlugin(ScrollToPlugin);
-
-        const canvas = document.getElementById('canvas');
+        // --- State Management ---
+        const world = document.getElementById('world');
+        const viewport = document.getElementById('viewport');
         const searchInput = document.getElementById('searchInput');
-        let panes = [];
+        const suggestionsBox = document.getElementById('suggestions');
         
         // --- Wikipedia API ---
-        async function fetchWikiData(title) {
-            const endpoint = `https://en.wikipedia.org/w/api.php?` +
-                `action=parse&page=${encodeURIComponent(title)}` +
-                `&format=json&origin=*&prop=text|displaytitle&disableeditsection=1`;
-            
+        const WIKI_API = 'https://en.wikipedia.org/w/api.php?origin=*';
+
+        // 1. Autocomplete
+        async function fetchSuggestions(query) {
+            if(query.length < 2) return [];
+            const url = `${WIKI_API}&action=opensearch&search=${encodeURIComponent(query)}&limit=5&namespace=0&format=json`;
+            const res = await fetch(url);
+            const data = await res.json();
+            // Opensearch returns [query, [titles], [descriptions], [urls]]
+            return data[1].map((title, i) => ({ title, desc: data[2][i] }));
+        }
+
+        // 2. Fetch Page Content
+        async function fetchPage(title) {
+            const url = `${WIKI_API}&action=parse&page=${encodeURIComponent(title)}&format=json&prop=text|displaytitle&redirects=1&disableeditsection=1&mobileformat=1`;
             try {
-                const response = await fetch(endpoint);
-                if (!response.ok) throw new Error('Not found');
-                const data = await response.json();
-                
-                if (!data.parse) throw new Error('Parse failed');
+                const res = await fetch(url);
+                const data = await res.json();
+                if(data.error) throw new Error(data.error.info);
                 
                 return {
-                    title: data.parse.displaytitle || title,
-                    text: data.parse.text['*'],
-                    rawTitle: title
+                    title: data.parse.displaytitle,
+                    html: data.parse.text['*']
                 };
-            } catch (err) {
-                console.error('Wiki fetch error:', err);
+            } catch (e) {
+                console.error(e);
                 return null;
             }
         }
 
-        // --- Pane Creation ---
-        async function createPane(query, parentIndex = -1) {
-            // Remove forward history if branching
-            if (parentIndex !== -1 && parentIndex < panes.length - 1) {
-                const panesToRemove = panes.slice(parentIndex + 1);
-                panesToRemove.forEach(p => p.wrapper.remove());
-                panes = panes.slice(0, parentIndex + 1);
-            }
+        // --- Core Tree Engine ---
 
-            // Create wrapper for pane + connector
+        // We don't store a JS Tree object. We use the DOM as the state.
+        // Hierarchy:
+        // .node-wrapper
+        //   > .card
+        //   > .children-stack (Flex-col)
+        //       > .node-wrapper
+        //       > .node-wrapper
+
+        function createNode(title, parentStack = null) {
+            // 1. Create Layout Elements
             const wrapper = document.createElement('div');
-            wrapper.className = 'pane-wrapper';
+            wrapper.className = 'node-wrapper';
 
-            // Add connector if not first pane
-            if (panes.length > 0) {
-                const connector = document.createElement('div');
-                connector.className = 'connector-line';
-                wrapper.appendChild(connector);
-            }
-
-            // Create pane
-            const paneEl = document.createElement('div');
-            paneEl.className = 'pane';
-            paneEl.innerHTML = `
-                <div class="pane-header">
-                    <div class="loading-skeleton w-3/4 h-8"></div>
-                    <div class="loading-skeleton w-1/2 h-4 mt-2"></div>
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            // Loading State
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3 class="text-white font-bold font-mono text-sm truncate pr-4">${title}</h3>
+                    <div class="absolute top-4 right-4 text-xs text-gray-600">LOADING</div>
                 </div>
-                <div class="pane-content">
-                    <div class="loading-skeleton w-full h-4"></div>
-                    <div class="loading-skeleton w-full h-4 mt-2"></div>
-                    <div class="loading-skeleton w-2/3 h-4 mt-2"></div>
+                <div class="card-body h-64">
+                    <div class="loading-pulse">
+                        <i class="ri-loader-4-line animate-spin text-2xl"></i>
+                    </div>
                 </div>
             `;
-            wrapper.appendChild(paneEl);
-            canvas.appendChild(wrapper);
-            
-            // Store reference
-            const paneData = { wrapper, element: paneEl, query };
-            panes.push(paneData);
-            
-            // Scroll to show loading state
-            scrollToEnd();
 
-            // Fetch data
-            const data = await fetchWikiData(query);
+            // Append Structure
+            wrapper.appendChild(card);
             
-            if (!data) {
-                paneEl.innerHTML = `
-                    <div class="p-8 text-center">
-                        <i class="ri-error-warning-line text-4xl text-red-400 mb-4"></i>
-                        <p class="text-red-400">Could not find "${query}"</p>
-                        <button onclick="panes.pop().wrapper.remove()" 
-                                class="mt-4 px-4 py-2 bg-red-500/20 hover:bg-red-500/30 rounded-lg text-sm">
-                            Remove Pane
-                        </button>
+            // Where do we put this new node?
+            if (!parentStack) {
+                // It's the Root
+                world.innerHTML = ''; // Clear world
+                world.appendChild(wrapper);
+            } else {
+                // It's a branch
+                parentStack.appendChild(wrapper);
+            }
+
+            // Animate In
+            gsap.fromTo(wrapper, 
+                { opacity: 0, x: -20 }, 
+                { opacity: 1, x: 0, duration: 0.4, ease: "power2.out" }
+            );
+
+            // Fetch Data
+            fetchPage(title).then(data => {
+                if(!data) {
+                    card.querySelector('.card-body').innerHTML = '<p class="text-red-500">Error loading page.</p>';
+                    return;
+                }
+
+                // Clean & Render
+                const cleanHTML = DOMPurify.sanitize(data.html, {
+                    FORBID_TAGS: ['style', 'script', 'link', 'iframe', 'frame'],
+                    FORBID_ATTR: ['style', 'onclick']
+                });
+
+                card.innerHTML = `
+                    <div class="card-header flex justify-between items-center bg-gray-900">
+                        <h3 class="text-white font-bold font-['Space_Grotesk'] text-lg leading-tight w-10/12">${data.title}</h3>
+                        <button class="text-gray-500 hover:text-white" onclick="this.closest('.node-wrapper').remove()"><i class="ri-close-line"></i></button>
+                    </div>
+                    <div class="card-body wiki-text">
+                        ${cleanHTML}
                     </div>
                 `;
+
+                // Intercept Links
+                const links = card.querySelectorAll('a');
+                links.forEach(link => {
+                    const href = link.getAttribute('href');
+                    if(href && href.startsWith('/wiki/')) {
+                        link.onclick = (e) => {
+                            e.preventDefault();
+                            const targetTitle = href.replace('/wiki/', '');
+                            spawnChild(wrapper, targetTitle);
+                        }
+                    } else {
+                        link.target = "_blank";
+                        link.classList.add('opacity-50');
+                    }
+                });
+            });
+        }
+
+        function spawnChild(parentNodeWrapper, title) {
+            // Does this parent already have a children stack?
+            let stack = parentNodeWrapper.querySelector('.children-stack');
+            
+            if (!stack) {
+                stack = document.createElement('div');
+                stack.className = 'children-stack';
+                parentNodeWrapper.appendChild(stack);
+            }
+
+            // Create new node in that stack
+            createNode(title, stack);
+        }
+
+        // --- Search Logic ---
+        let debounceTimer;
+        
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(debounceTimer);
+            const query = e.target.value;
+            
+            if(query.length < 2) {
+                suggestionsBox.classList.remove('active');
                 return;
             }
 
-            // Clean HTML
-            const cleanHTML = DOMPurify.sanitize(data.text, { 
-                ADD_ATTR: ['target'],
-                FORBID_TAGS: ['style', 'script']
-            });
-
-            // Render
-            paneEl.innerHTML = `
-                <div class="pane-header">
-                    <div class="flex justify-between items-start">
-                        <div class="flex-1">
-                            <div class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">
-                                WIKIPEDIA
-                            </div>
-                            <h2 class="text-2xl font-bold text-white font-['Space_Grotesk'] leading-tight">
-                                ${data.title}
-                            </h2>
-                        </div>
-                        <div class="text-xs text-gray-600 font-mono">#${panes.length}</div>
-                    </div>
-                </div>
-                <div class="pane-content wiki-content">
-                    ${cleanHTML}
-                </div>
-            `;
-
-            // Animate in
-            gsap.to(paneEl, { 
-                opacity: 1, 
-                y: 0, 
-                duration: 0.6, 
-                ease: "power2.out",
-                delay: 0.1
-            });
-
-            // Intercept links
-            const links = paneEl.querySelectorAll('a');
-            links.forEach(link => {
-                const href = link.getAttribute('href');
+            debounceTimer = setTimeout(async () => {
+                document.getElementById('loader').classList.remove('hidden');
+                const results = await fetchSuggestions(query);
+                document.getElementById('loader').classList.add('hidden');
                 
-                if (href && href.startsWith('/wiki/')) {
-                    const topic = href.replace('/wiki/', '').split('#')[0];
-                    
-                    // Skip special pages
-                    if (topic.includes(':')) {
-                        link.style.opacity = '0.5';
-                        link.style.cursor = 'not-allowed';
-                        return;
-                    }
-                    
-                    link.onclick = (e) => {
-                        e.preventDefault();
-                        const currentIndex = panes.findIndex(p => p.element === paneEl);
-                        createPane(topic, currentIndex);
-                    };
-                } else if (href && (href.startsWith('http') || href.startsWith('//'))) {
-                    link.target = "_blank";
-                    link.classList.add('text-gray-500');
-                    link.style.borderColor = '#444';
-                }
-            });
-
-            scrollToEnd();
-        }
-
-        // --- Scroll Logic ---
-        function scrollToEnd() {
-            setTimeout(() => {
-                const maxScroll = document.body.scrollWidth - window.innerWidth;
-                gsap.to(window, { 
-                    scrollTo: { x: maxScroll }, 
-                    duration: 0.8, 
-                    ease: "power2.inOut" 
-                });
-            }, 100);
-        }
-
-        // --- Drag Scrolling ---
-        let isDragging = false;
-        let startX, scrollLeft;
-
-        document.body.addEventListener('mousedown', (e) => {
-            // Don't interfere with text selection or link clicks
-            if (e.target.tagName === 'A' || e.target.closest('.pane-content')) return;
-            
-            isDragging = true;
-            startX = e.pageX - window.pageXOffset;
-            scrollLeft = window.pageXOffset;
-            document.body.style.cursor = 'grabbing';
-        });
-        
-        document.body.addEventListener('mouseup', () => {
-            isDragging = false;
-            document.body.style.cursor = '';
-        });
-        
-        document.body.addEventListener('mousemove', (e) => {
-            if (!isDragging) return;
-            e.preventDefault();
-            const x = e.pageX - window.pageXOffset;
-            const walk = (x - startX) * 1.5;
-            window.scrollTo(scrollLeft - walk, 0);
+                renderSuggestions(results);
+            }, 300);
         });
 
-        // --- Search ---
-        searchInput.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter' && searchInput.value.trim()) {
-                createPane(searchInput.value.trim());
-                searchInput.value = '';
-                searchInput.blur();
+        function renderSuggestions(items) {
+            suggestionsBox.innerHTML = '';
+            if(items.length === 0) {
+                suggestionsBox.classList.remove('active');
+                return;
             }
+            
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = `${item.title} <span>${item.desc ? item.desc.substring(0, 40) + '...' : ''}</span>`;
+                div.onclick = () => {
+                    createNode(item.title); // Start new root
+                    suggestionsBox.classList.remove('active');
+                    searchInput.value = '';
+                };
+                suggestionsBox.appendChild(div);
+            });
+            suggestionsBox.classList.add('active');
+        }
+
+        // --- Viewport Physics (Infinite Pan) ---
+        let isPanning = false;
+        let startX = 0, startY = 0;
+        let transX = 0, transY = 0;
+
+        viewport.addEventListener('mousedown', e => {
+            if(e.target.closest('.card') || e.target.closest('.search-container')) return;
+            isPanning = true;
+            startX = e.clientX - transX;
+            startY = e.clientY - transY;
+            viewport.style.cursor = 'grabbing';
         });
 
-        // --- Initialize ---
-        createPane("Internet");
+        window.addEventListener('mouseup', () => {
+            isPanning = false;
+            viewport.style.cursor = 'grab';
+        });
 
-        // Remove hint after 5s
-        setTimeout(() => {
-            const hint = document.querySelector('.drag-hint');
-            gsap.to(hint, { opacity: 0, y: 20, duration: 0.5, onComplete: () => hint.remove() });
-        }, 5000);
+        window.addEventListener('mousemove', e => {
+            if(!isPanning) return;
+            e.preventDefault();
+            transX = e.clientX - startX;
+            transY = e.clientY - startY;
+            world.style.transform = `translate(${transX}px, ${transY}px)`;
+        });
+
+        // Initialize
+        createNode("Fractal"); 
+
     </script>
 </body>
 </html>
