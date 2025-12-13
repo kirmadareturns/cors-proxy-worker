@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>WikiFractal | Infinite Knowledge Tree</title>
+    <title>WikiFractal | Frictionless Nav</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
@@ -15,39 +15,42 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         
         body { 
-            background: radial-gradient(circle at 50% 50%, #0a0a0f 0%, #050505 100%);
+            background: radial-gradient(circle at 50% 50%, #0a0a0f 0%, #000000 100%);
             color: #e2e8f0; 
             font-family: 'Inter', sans-serif; 
             overflow: hidden;
             width: 100vw; 
             height: 100vh;
+            user-select: none; /* Prevent accidental text highlighting while dragging */
         }
 
-        /* Viewport & World */
+        /* --- Viewport & World --- */
         #viewport {
             width: 100%;
             height: 100%;
             overflow: hidden;
-            cursor: grab;
+            cursor: default;
             position: relative;
+            touch-action: none; /* Crucial for smooth gestures */
         }
-        #viewport.panning { cursor: grabbing; }
-
+        
+        /* The infinite surface */
         #world {
             position: absolute;
             display: flex;
-            padding: 50vh 100px 100px 100px;
+            /* Start with plenty of padding so we aren't pinned to edge */
+            padding: 50vh 50vw; 
             transform-origin: 0 0;
             will-change: transform;
-            transition: transform 0.05s linear;
+            /* No transition during drag for 60fps performance */
         }
 
-        /* Tree Structure */
+        /* --- Tree Structure --- */
         .node-wrapper {
             display: flex;
             flex-direction: row;
             align-items: center;
-            gap: 60px;
+            gap: 80px; /* More breathing room */
             position: relative;
         }
 
@@ -56,387 +59,290 @@
             flex-direction: column;
             gap: 40px;
             position: relative;
+            padding-left: 0;
         }
 
-        /* Connector Lines - Simplified & Working */
+        /* --- Connectors --- */
+        /* Horizontal Branch */
         .node-wrapper > .children-stack::before {
             content: '';
             position: absolute;
-            left: -60px;
-            top: 0;
-            bottom: 0;
-            width: 60px;
-            height: 2px;
-            background: linear-gradient(90deg, #333 0%, #555 100%);
+            left: -80px; /* Match gap */
             top: 50%;
-            transform: translateY(-1px);
+            width: 80px;
+            height: 2px;
+            background: #333;
         }
 
+        /* Vertical Spine */
         .children-stack::after {
             content: '';
             position: absolute;
-            left: -60px;
+            left: -80px;
             top: 0;
             bottom: 0;
             width: 2px;
-            background: linear-gradient(180deg, #555 0%, #333 50%, #555 100%);
+            background: #333;
+        }
+        
+        /* Hide spine for single child */
+        .children-stack > .node-wrapper:only-child::after { display: none; }
+        
+        /* Spine Clipping (Don't draw line above first child or below last child) */
+        .children-stack > .node-wrapper:first-child::after {
+            content: ''; position: absolute; left: -80px; top: -50px; bottom: 50%; width: 4px; background: #0a0a0f; z-index: 1;
+        }
+        .children-stack > .node-wrapper:last-child::after {
+            content: ''; position: absolute; left: -80px; top: 50%; bottom: -50px; width: 4px; background: #0a0a0f; z-index: 1;
         }
 
-        .children-stack > .node-wrapper:only-child::after {
-            display: none;
-        }
-
-        /* Card Styling */
+        /* --- Card UI --- */
         .card {
-            width: 420px;
-            max-height: 600px;
-            background: linear-gradient(135deg, #1a1a1f 0%, #12121a 100%);
-            border: 1px solid #2a2a35;
-            border-radius: 16px;
+            width: 450px;
+            height: 600px;
+            background: #121216;
+            border: 1px solid #2a2a30;
+            border-radius: 12px;
             flex-shrink: 0;
             display: flex;
             flex-direction: column;
             position: relative;
             z-index: 10;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-shadow: 
-                0 8px 32px rgba(0,0,0,0.4),
-                0 0 0 1px rgba(255,255,255,0.03) inset;
-            cursor: default;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: border-color 0.2s;
+            user-select: text; /* Allow text selection inside card */
         }
         
-        .card:hover { 
-            border-color: #3b82f6;
-            transform: translateY(-2px);
-            box-shadow: 
-                0 12px 48px rgba(0,0,0,0.6),
-                0 0 0 1px #3b82f6 inset;
-        }
+        .card:hover { border-color: #444; }
+        .card.active { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2); }
 
         .card-header {
-            padding: 20px;
-            background: linear-gradient(135deg, rgba(59, 130, 246, 0.08) 0%, rgba(147, 51, 234, 0.05) 100%);
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            border-radius: 16px 16px 0 0;
-            position: relative;
+            padding: 16px 24px;
+            background: #18181c;
+            border-bottom: 1px solid #2a2a30;
+            border-radius: 12px 12px 0 0;
             display: flex;
             justify-content: space-between;
-            align-items: flex-start;
-            gap: 12px;
-        }
-
-        .card-title {
-            font-family: 'Space Grotesk', sans-serif;
-            color: white;
-            font-size: 1.1rem;
-            font-weight: 600;
-            line-height: 1.3;
-            flex: 1;
-        }
-
-        .card-close {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 8px;
-            width: 28px;
-            height: 28px;
-            display: flex;
             align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            flex-shrink: 0;
+            cursor: grab; /* Header is a drag handle for the map */
         }
-        .card-close:hover {
-            background: rgba(239, 68, 68, 0.2);
-            border-color: #ef4444;
-            color: #ef4444;
-        }
+        .card-header:active { cursor: grabbing; }
 
         .card-body {
-            overflow-y: auto;
-            padding: 24px;
-            font-size: 0.95rem;
-            line-height: 1.7;
-            color: #cbd5e1;
             flex: 1;
-        }
-
-        .card-body::-webkit-scrollbar { width: 6px; }
-        .card-body::-webkit-scrollbar-track { background: transparent; }
-        .card-body::-webkit-scrollbar-thumb { 
-            background: #333; 
-            border-radius: 3px;
-        }
-        .card-body::-webkit-scrollbar-thumb:hover { background: #444; }
-
-        /* Wiki Content */
-        .wiki-text p { margin-bottom: 1.2rem; }
-        .wiki-text a { 
-            color: #60a5fa; 
-            text-decoration: none; 
-            border-bottom: 1px dashed rgba(96, 165, 250, 0.3);
-            transition: all 0.2s;
-            cursor: pointer;
-        }
-        .wiki-text a:hover { 
-            background: rgba(59, 130, 246, 0.15);
-            border-bottom-color: #60a5fa;
-            padding: 0 2px;
-            border-radius: 3px;
-        }
-        .wiki-text h2, .wiki-text h3 { 
-            color: white; 
-            margin-top: 1.5rem; 
-            margin-bottom: 0.75rem;
-            font-weight: 600; 
-            font-family: 'Space Grotesk';
-        }
-        .wiki-text h2 { font-size: 1.3rem; }
-        .wiki-text h3 { font-size: 1.1rem; }
-        .wiki-text ul, .wiki-text ol { 
-            margin-left: 1.5rem; 
-            margin-bottom: 1rem; 
-        }
-        .wiki-text li { margin-bottom: 0.5rem; }
-        .wiki-text img { 
-            max-width: 100%; 
-            height: auto; 
-            border-radius: 8px; 
-            margin: 1rem 0;
-        }
-        .wiki-text table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
-            font-size: 0.9rem;
-        }
-        .wiki-text td, .wiki-text th {
-            padding: 8px;
-            border: 1px solid #333;
+            overflow-y: auto; /* Enable Scroll */
+            padding: 24px;
+            font-size: 1rem;
+            line-height: 1.6;
+            color: #ccc;
+            /* Smooth scroll behavior */
+            scrollbar-width: thin;
+            scrollbar-color: #444 #121216;
         }
         
-        /* Hide wiki clutter */
-        .infobox, .sidebar, .navbox, .metadata, 
-        .ambox, .mbox, .hatnote { display: none !important; }
+        /* Prevent scroll chaining (Scrolling text doesn't move map) */
+        .card-body { overscroll-behavior: contain; }
 
-        /* Loading State */
-        .loading-pulse {
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            color: #555;
-            gap: 12px;
-        }
+        /* Wiki Typography */
+        .wiki-text h2 { font-family: 'Space Grotesk'; font-size: 1.4rem; color: #fff; margin: 1.5rem 0 0.5rem 0; }
+        .wiki-text p { margin-bottom: 1rem; }
+        .wiki-text a { color: #60a5fa; text-decoration: none; border-bottom: 1px solid rgba(96,165,250,0.2); cursor: pointer; }
+        .wiki-text a:hover { background: rgba(59,130,246,0.1); }
+        .wiki-text img { max-width: 100%; border-radius: 6px; margin: 10px 0; }
 
-        /* Search UI */
-        .search-container {
+        /* Search & Controls */
+        .ui-layer {
             position: fixed;
-            top: 2rem;
+            z-index: 100;
+            pointer-events: none; /* Let clicks pass through to map */
+            width: 100%;
+            height: 100%;
+            top: 0; left: 0;
+        }
+        
+        .search-bar {
+            pointer-events: auto;
+            position: absolute;
+            top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            z-index: 100;
-            width: 500px;
-        }
-        
-        .search-box {
-            background: rgba(15,15,20,0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid #2a2a35;
-            border-radius: 16px;
+            background: rgba(20,20,25,0.9);
+            backdrop-filter: blur(10px);
+            border: 1px solid #333;
+            border-radius: 30px;
+            padding: 8px 20px;
             display: flex;
             align-items: center;
-            padding: 0 20px;
-            box-shadow: 
-                0 10px 40px rgba(0,0,0,0.6),
-                0 0 0 1px rgba(255,255,255,0.05) inset;
-            height: 56px;
-            transition: all 0.3s;
-        }
-        .search-box:focus-within { 
-            border-color: #3b82f6; 
-            box-shadow: 
-                0 0 0 3px rgba(59, 130, 246, 0.2),
-                0 10px 40px rgba(0,0,0,0.6);
+            gap: 10px;
+            width: 400px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         
-        .search-input {
-            background: transparent;
-            border: none;
-            outline: none;
-            color: white;
-            width: 100%;
-            height: 100%;
-            font-size: 0.95rem;
-            font-weight: 500;
+        .nav-hint {
+            position: absolute;
+            bottom: 30px;
+            left: 30px;
+            display: flex;
+            gap: 20px;
+            font-size: 0.8rem;
+            color: #666;
+            font-family: monospace;
+            background: rgba(0,0,0,0.5);
+            padding: 10px 20px;
+            border-radius: 20px;
+            border: 1px solid #222;
         }
-        .search-input::placeholder { color: #555; }
+        
+        .key { background: #333; color: #fff; padding: 2px 6px; border-radius: 4px; margin-right: 4px; }
+
+        /* Loading Spinner */
+        .spinner { border: 3px solid rgba(255,255,255,0.1); border-top: 3px solid #3b82f6; border-radius: 50%; width: 24px; height: 24px; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .suggestions {
-            margin-top: 8px;
-            background: rgba(15,15,20,0.98);
-            backdrop-filter: blur(20px);
-            border: 1px solid #2a2a35;
+            pointer-events: auto;
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 400px;
+            background: #1a1a20;
+            border: 1px solid #333;
             border-radius: 12px;
-            overflow: hidden;
             display: none;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.6);
         }
         .suggestions.active { display: block; }
-        
-        .suggestion-item {
-            padding: 14px 20px;
-            cursor: pointer;
-            color: #cbd5e1;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            font-size: 0.9rem;
-            transition: all 0.2s;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .suggestion-item:hover { 
-            background: rgba(59, 130, 246, 0.1);
-            color: white;
-        }
-        .suggestion-item:last-child { border-bottom: none; }
-        .suggestion-desc { 
-            color: #666; 
-            font-size: 0.8rem;
-            font-style: italic;
-            max-width: 200px;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-
-        /* Controls */
-        .controls {
-            position: fixed;
-            bottom: 2rem;
-            right: 2rem;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            z-index: 90;
-        }
-
-        .control-btn {
-            width: 48px;
-            height: 48px;
-            background: rgba(15,15,20,0.95);
-            backdrop-filter: blur(20px);
-            border: 1px solid #2a2a35;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
-        }
-        .control-btn:hover {
-            background: rgba(59, 130, 246, 0.2);
-            border-color: #3b82f6;
-            transform: translateY(-2px);
-        }
-        .control-btn:active { transform: translateY(0); }
-
-        .hint {
-            position: fixed;
-            bottom: 2rem;
-            left: 2rem;
-            background: rgba(59, 130, 246, 0.1);
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            padding: 12px 20px;
-            border-radius: 12px;
-            font-size: 0.85rem;
-            color: #60a5fa;
-            z-index: 90;
-            backdrop-filter: blur(10px);
-        }
+        .s-item { padding: 12px 20px; border-bottom: 1px solid #222; cursor: pointer; color: #ccc; }
+        .s-item:hover { background: #222; color: #fff; }
     </style>
 </head>
 <body>
 
-    <div class="search-container">
-        <div class="search-box">
-            <i class="ri-search-2-line text-gray-500 mr-3 text-lg"></i>
-            <input type="text" id="searchInput" class="search-input" 
-                   placeholder="Search Wikipedia..." autocomplete="off">
-            <i id="loader" class="ri-loader-4-line animate-spin text-gray-500 hidden"></i>
+    <div class="ui-layer">
+        <div class="search-bar">
+            <i class="ri-search-line text-gray-500"></i>
+            <input type="text" id="searchInput" placeholder="Search..." class="bg-transparent border-none outline-none text-white w-full h-8 text-sm">
+            <div id="loader" class="spinner hidden"></div>
         </div>
         <div id="suggestions" class="suggestions"></div>
+
+        <div class="nav-hint">
+            <span><span class="key">Scroll</span> Pan View</span>
+            <span><span class="key">Hover</span> Scroll Text</span>
+            <span><span class="key">Ctrl+Scroll</span> Zoom</span>
+            <span><span class="key">Drag</span> Pan</span>
+        </div>
     </div>
 
     <div id="viewport">
         <div id="world"></div>
     </div>
 
-    <div class="controls">
-        <button class="control-btn" onclick="zoomIn()" title="Zoom In">
-            <i class="ri-zoom-in-line text-white text-xl"></i>
-        </button>
-        <button class="control-btn" onclick="zoomOut()" title="Zoom Out">
-            <i class="ri-zoom-out-line text-white text-xl"></i>
-        </button>
-        <button class="control-btn" onclick="resetView()" title="Reset View">
-            <i class="ri-focus-2-line text-white text-xl"></i>
-        </button>
-    </div>
-
-    <div class="hint">
-        <i class="ri-information-line mr-2"></i>
-        Drag to pan · Scroll to zoom · Click links to branch
-    </div>
-
     <script>
-        const world = document.getElementById('world');
-        const viewport = document.getElementById('viewport');
-        const searchInput = document.getElementById('searchInput');
-        const suggestionsBox = document.getElementById('suggestions');
-        
-        const WIKI_API = 'https://en.wikipedia.org/w/api.php?origin=*';
+        // --- State ---
+        const state = {
+            scale: 1,
+            x: 0,
+            y: 0,
+            isDragging: false,
+            startX: 0,
+            startY: 0
+        };
 
-        // View state
-        let transX = 0, transY = 0, scale = 1;
+        const dom = {
+            world: document.getElementById('world'),
+            viewport: document.getElementById('viewport'),
+            input: document.getElementById('searchInput'),
+            suggestions: document.getElementById('suggestions')
+        };
 
-        // Wikipedia API
-        async function fetchSuggestions(query) {
-            if(query.length < 2) return [];
-            const url = `${WIKI_API}&action=opensearch&search=${encodeURIComponent(query)}&limit=6&namespace=0&format=json`;
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                return data[1].map((title, i) => ({ 
-                    title, 
-                    desc: data[2][i] 
-                }));
-            } catch(e) {
-                return [];
-            }
+        const API = 'https://en.wikipedia.org/w/api.php?origin=*';
+
+        // --- Core Navigation Engine (The Fix) ---
+
+        function updateTransform() {
+            dom.world.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
         }
+
+        // 1. Wheel Handling - The logic that fixes "Difficult Scrolling"
+        dom.viewport.addEventListener('wheel', (e) => {
+            
+            // A. Check if user is hovering over a card body
+            const isOverCard = e.target.closest('.card-body');
+            
+            // B. ZOOM: Ctrl + Wheel OR Pinch gesture (browsers often map pinch to Ctrl+Wheel)
+            if (e.ctrlKey) {
+                e.preventDefault();
+                const delta = e.deltaY * -0.001;
+                const newScale = Math.min(Math.max(0.1, state.scale + delta), 4);
+                
+                // Zoom towards mouse pointer logic
+                const rect = dom.viewport.getBoundingClientRect();
+                const mouseX = e.clientX - rect.left;
+                const mouseY = e.clientY - rect.top;
+                
+                // Calculate world space before zoom
+                const worldX = (mouseX - state.x) / state.scale;
+                const worldY = (mouseY - state.y) / state.scale;
+                
+                state.scale = newScale;
+                
+                // Recalculate x/y to keep mouse fixed
+                state.x = mouseX - worldX * state.scale;
+                state.y = mouseY - worldY * state.scale;
+                
+                updateTransform();
+                return;
+            }
+
+            // C. CONTENT SCROLL: If over a card, let browser handle it naturally
+            if (isOverCard) {
+                // We do NOTHING here. Event propagates to card-body div. 
+                // The CSS 'overscroll-behavior: contain' prevents the parent from moving.
+                return; 
+            }
+
+            // D. PAN: If on background, wheel moves the canvas
+            e.preventDefault(); // Stop browser back/forward swipes
+            state.x -= e.deltaX;
+            state.y -= e.deltaY;
+            updateTransform();
+
+        }, { passive: false }); // Passive false required to use preventDefault
+
+        // 2. Drag Logic (Mouse users who prefer drag)
+        dom.viewport.addEventListener('mousedown', (e) => {
+            // Only drag if clicking background or Card Header
+            if (e.target.closest('.card-body') || e.target.closest('.search-bar')) return;
+            
+            state.isDragging = true;
+            state.startX = e.clientX - state.x;
+            state.startY = e.clientY - state.y;
+            dom.viewport.style.cursor = 'grabbing';
+        });
+
+        window.addEventListener('mouseup', () => {
+            state.isDragging = false;
+            dom.viewport.style.cursor = 'default';
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!state.isDragging) return;
+            e.preventDefault();
+            state.x = e.clientX - state.startX;
+            state.y = e.clientY - state.startY;
+            updateTransform();
+        });
+
+
+        // --- Wikipedia Logic (Same as before, simplified) ---
 
         async function fetchPage(title) {
-            const url = `${WIKI_API}&action=parse&page=${encodeURIComponent(title)}&format=json&prop=text|displaytitle&redirects=1&disableeditsection=1`;
-            try {
-                const res = await fetch(url);
-                const data = await res.json();
-                if(data.error) throw new Error(data.error.info);
-                
-                return {
-                    title: data.parse.displaytitle,
-                    html: data.parse.text['*']
-                };
-            } catch (e) {
-                console.error('Fetch error:', e);
-                return null;
-            }
+            const res = await fetch(`${API}&action=parse&page=${encodeURIComponent(title)}&format=json&prop=text|displaytitle&redirects=1&disableeditsection=1`);
+            const data = await res.json();
+            return data.parse ? { title: data.parse.displaytitle, html: data.parse.text['*'] } : null;
         }
 
-        // Tree Building
         function createNode(title, parentStack = null) {
             const wrapper = document.createElement('div');
             wrapper.className = 'node-wrapper';
@@ -444,87 +350,58 @@
             const card = document.createElement('div');
             card.className = 'card';
             
+            // Structure
             card.innerHTML = `
                 <div class="card-header">
-                    <div class="card-title">${title}</div>
-                    <div class="text-xs text-gray-600 mt-1">Loading...</div>
+                    <span class="font-bold text-white truncate pr-4">${title}</span>
+                    <i class="ri-close-line cursor-pointer hover:text-red-500" onclick="this.closest('.node-wrapper').remove()"></i>
                 </div>
-                <div class="card-body">
-                    <div class="loading-pulse">
-                        <i class="ri-loader-4-line animate-spin text-3xl"></i>
-                        <span class="text-sm">Fetching content...</span>
+                <div class="card-body wiki-text">
+                    <div class="flex flex-col items-center justify-center h-full text-gray-500 gap-2">
+                        <div class="spinner border-gray-600 border-t-blue-500"></div>
+                        <span class="text-xs">Loading Knowledge...</span>
                     </div>
                 </div>
             `;
 
             wrapper.appendChild(card);
-            
+
             if (!parentStack) {
-                world.innerHTML = '';
-                world.appendChild(wrapper);
-                // Reset view to center on new root
-                setTimeout(() => resetView(), 100);
+                dom.world.innerHTML = '';
+                dom.world.appendChild(wrapper);
+                // Center camera roughly
+                state.x = (window.innerWidth / 2) - 225;
+                state.y = (window.innerHeight / 2) - 300;
+                updateTransform();
             } else {
                 parentStack.appendChild(wrapper);
             }
 
-            gsap.fromTo(wrapper, 
-                { opacity: 0, x: -30, scale: 0.95 }, 
-                { opacity: 1, x: 0, scale: 1, duration: 0.5, ease: "back.out(1.2)" }
-            );
+            // Animation
+            gsap.from(card, { scale: 0.8, opacity: 0, duration: 0.4, ease: "back.out(1.7)" });
 
+            // Fetch
             fetchPage(title).then(data => {
                 if(!data) {
-                    card.innerHTML = `
-                        <div class="card-header">
-                            <div class="card-title text-red-400">Error</div>
-                        </div>
-                        <div class="card-body">
-                            <p class="text-red-400">Could not load "${title}"</p>
-                        </div>
-                    `;
+                    card.querySelector('.card-body').innerHTML = '<div class="p-4 text-red-400">Not found.</div>';
                     return;
                 }
+                
+                const cleanHTML = DOMPurify.sanitize(data.html, { FORBID_TAGS: ['style','script','link'] });
+                const body = card.querySelector('.card-body');
+                body.innerHTML = cleanHTML;
 
-                const cleanHTML = DOMPurify.sanitize(data.html, {
-                    FORBID_TAGS: ['style', 'script', 'iframe'],
-                    FORBID_ATTR: ['style', 'onclick']
-                });
-
-                card.innerHTML = `
-                    <div class="card-header">
-                        <div class="card-title">${data.title}</div>
-                        <button class="card-close" onclick="removeNode(this)">
-                            <i class="ri-close-line"></i>
-                        </button>
-                    </div>
-                    <div class="card-body wiki-text">
-                        ${cleanHTML}
-                    </div>
-                `;
-
-                // Intercept links
-                const links = card.querySelectorAll('a');
-                links.forEach(link => {
+                // Handle Links
+                body.querySelectorAll('a').forEach(link => {
                     const href = link.getAttribute('href');
                     if(href && href.startsWith('/wiki/')) {
-                        const targetTitle = href.replace('/wiki/', '').split('#')[0];
-                        
-                        // Skip special pages
-                        if(targetTitle.includes(':')) {
-                            link.style.opacity = '0.5';
-                            link.style.cursor = 'not-allowed';
-                            return;
-                        }
-                        
                         link.onclick = (e) => {
                             e.preventDefault();
-                            e.stopPropagation();
-                            spawnChild(wrapper, targetTitle);
-                        };
-                    } else if(href && href.startsWith('http')) {
+                            const nextTitle = href.replace('/wiki/', '').split('#')[0];
+                            spawnChild(wrapper, nextTitle);
+                        }
+                    } else {
                         link.target = "_blank";
-                        link.classList.add('opacity-60');
                     }
                 });
             });
@@ -532,180 +409,53 @@
 
         function spawnChild(parentNodeWrapper, title) {
             let stack = parentNodeWrapper.querySelector('.children-stack');
-            
             if (!stack) {
                 stack = document.createElement('div');
                 stack.className = 'children-stack';
                 parentNodeWrapper.appendChild(stack);
             }
-
             createNode(title, stack);
         }
 
-        function removeNode(btn) {
-            const wrapper = btn.closest('.node-wrapper');
-            gsap.to(wrapper, {
-                opacity: 0,
-                scale: 0.9,
-                duration: 0.3,
-                onComplete: () => wrapper.remove()
-            });
-        }
-
-        // Search
-        let debounceTimer;
-        
-        searchInput.addEventListener('input', (e) => {
-            clearTimeout(debounceTimer);
-            const query = e.target.value;
+        // --- Search ---
+        let debounce;
+        dom.input.addEventListener('input', (e) => {
+            clearTimeout(debounce);
+            const q = e.target.value;
+            if(q.length < 2) return;
             
-            if(query.length < 2) {
-                suggestionsBox.classList.remove('active');
-                return;
-            }
-
             document.getElementById('loader').classList.remove('hidden');
-            
-            debounceTimer = setTimeout(async () => {
-                const results = await fetchSuggestions(query);
+            debounce = setTimeout(async () => {
+                const res = await fetch(`${API}&action=opensearch&search=${encodeURIComponent(q)}&limit=5&format=json`);
+                const data = await res.json();
                 document.getElementById('loader').classList.add('hidden');
-                renderSuggestions(results);
+                
+                dom.suggestions.innerHTML = '';
+                if(data[1].length) {
+                    dom.suggestions.classList.add('active');
+                    data[1].forEach(t => {
+                        const div = document.createElement('div');
+                        div.className = 's-item';
+                        div.innerText = t;
+                        div.onclick = () => {
+                            createNode(t);
+                            dom.suggestions.classList.remove('active');
+                            dom.input.value = '';
+                        }
+                        dom.suggestions.appendChild(div);
+                    });
+                }
             }, 300);
         });
 
-        function renderSuggestions(items) {
-            suggestionsBox.innerHTML = '';
-            
-            if(items.length === 0) {
-                suggestionsBox.classList.remove('active');
-                return;
-            }
-            
-            items.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.innerHTML = `
-                    <span>${item.title}</span>
-                    <span class="suggestion-desc">${item.desc || ''}</span>
-                `;
-                div.onclick = () => {
-                    createNode(item.title);
-                    suggestionsBox.classList.remove('active');
-                    searchInput.value = '';
-                };
-                suggestionsBox.appendChild(div);
-            });
-            
-            suggestionsBox.classList.add('active');
-        }
-
-        // Close suggestions when clicking outside
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.search-container')) {
-                suggestionsBox.classList.remove('active');
-            }
+        // Close suggestions on click outside
+        window.addEventListener('click', (e) => {
+            if(!e.target.closest('.search-bar')) dom.suggestions.classList.remove('active');
         });
 
-        // Pan & Zoom
-        let isPanning = false;
-        let startX = 0, startY = 0;
-
-        viewport.addEventListener('mousedown', e => {
-            // Don't pan if clicking on cards or search
-            if(e.target.closest('.card') || e.target.closest('.search-container') || 
-               e.target.closest('.controls')) return;
-            
-            isPanning = true;
-            startX = e.clientX - transX;
-            startY = e.clientY - transY;
-            viewport.classList.add('panning');
-        });
-
-        window.addEventListener('mouseup', () => {
-            isPanning = false;
-            viewport.classList.remove('panning');
-        });
-
-        window.addEventListener('mousemove', e => {
-            if(!isPanning) return;
-            e.preventDefault();
-            transX = e.clientX - startX;
-            transY = e.clientY - startY;
-            updateTransform();
-        });
-
-        // Zoom with scroll
-        viewport.addEventListener('wheel', (e) => {
-            e.preventDefault();
-            
-            const delta = e.deltaY * -0.001;
-            const newScale = Math.min(Math.max(0.3, scale + delta), 2);
-            
-            // Zoom towards cursor
-            const rect = viewport.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = e.clientY - rect.top;
-            
-            const worldX = (mouseX - transX) / scale;
-            const worldY = (mouseY - transY) / scale;
-            
-            scale = newScale;
-            
-            transX = mouseX - worldX * scale;
-            transY = mouseY - worldY * scale;
-            
-            updateTransform();
-        }, { passive: false });
-
-        function updateTransform() {
-            world.style.transform = `translate(${transX}px, ${transY}px) scale(${scale})`;
-        }
-
-        // Controls
-        function zoomIn() {
-            scale = Math.min(2, scale + 0.2);
-            updateTransform();
-        }
-
-        function zoomOut() {
-            scale = Math.max(0.3, scale - 0.2);
-            updateTransform();
-        }
-
-        function resetView() {
-            transX = 0;
-            transY = 0;
-            scale = 1;
-            gsap.to(world, {
-                x: transX,
-                y: transY,
-                scale: scale,
-                duration: 0.5,
-                ease: "power2.inOut",
-                onUpdate: () => {
-                    const style = world.style.transform;
-                    const match = style.match(/translate\(([^,]+),\s*([^)]+)\)/);
-                    if(match) {
-                        transX = parseFloat(match[1]);
-                        transY = parseFloat(match[2]);
-                    }
-                }
-            });
-        }
-
-        // Initialize
+        // Init
         createNode("Fractal");
 
-        // Hide hint after 5s
-        setTimeout(() => {
-            const hint = document.querySelector('.hint');
-            gsap.to(hint, { 
-                opacity: 0, 
-                y: 20, 
-                duration: 0.5, 
-                onComplete: () => hint.remove() 
-            });
-        }, 6000);
     </script>
 </body>
 </html>
