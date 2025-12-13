@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Translator (Client-Side)</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <header>
+        <h1>Code Explainer</h1>
+        <p>Paste HTML, CSS, or JS below for line-by-line explanations.</p>
+    </header>
+
+    <main class="container">
+        <section class="panel input-panel">
+            <div class="panel-header">Code Input</div>
+            <div class="editor-wrapper">
+                <textarea id="codeInput" placeholder="Paste your code here..." spellcheck="false"></textarea>
+                <pre aria-hidden="true"><code id="highlighting-content" class="language-javascript"></code></pre>
+            </div>
+        </section>
+
+        <section class="panel output-panel">
+            <div class="panel-header">Plain English Explanation</div>
+            <div id="explanationOutput" class="explanation-content">
+                <div class="placeholder-text">Waiting for code...</div>
+            </div>
+        </section>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
