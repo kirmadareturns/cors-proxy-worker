@@ -3,9 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Vibe Coder (Pro Edition)</title>
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
+    <title>Pro Code Customizer (AST Powered)</title>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.min.css">
+    
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/postcss/8.4.31/postcss.min.js"></script>
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -13,28 +21,26 @@
     <div class="app-container">
         <div class="panel code-panel">
             <div class="panel-header">
-                <span><i class="fa-solid fa-code"></i> SOURCE CODE</span>
+                <i class="fa-solid fa-code-branch"></i> EDITOR (Monaco Engine)
             </div>
-            <div class="editor-wrapper">
-                <textarea id="codeInput" spellcheck="false" placeholder="Paste your HTML, CSS, or JS here..."></textarea>
-                <pre aria-hidden="true"><code id="highlighting-content" class="language-javascript"></code></pre>
-            </div>
+            <div id="monaco-container"></div>
         </div>
 
         <div class="panel guide-panel">
             <div class="panel-header">
-                <span><i class="fa-solid fa-user-astronaut"></i> DEVELOPER INSIGHTS</span>
+                <i class="fa-solid fa-wand-magic-sparkles"></i> LIVE CUSTOMIZATION GUIDE
             </div>
             <div id="explanationOutput" class="explanation-content">
-                <div class="empty-state">
-                    <i class="fa-solid fa-layer-group"></i>
-                    <p>Paste your code on the left.<br>I will tell you how to customize it.</p>
-                </div>
+                <div class="loading-state">Initializing Analysis Engine...</div>
             </div>
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+    <script>var require = { paths: { vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' } };</script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/loader.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.nls.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs/editor/editor.main.js"></script>
+    
     <script src="app.js"></script>
 </body>
 </html>
