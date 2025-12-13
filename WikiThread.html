@@ -29,6 +29,8 @@
             width: 100vw;
             height: 100vh;
             overflow: hidden; /* Default for Desktop */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
         }
 
         /* --- DESKTOP VIEWPORT --- */
@@ -50,6 +52,7 @@
             will-change: transform;
             backface-visibility: hidden;
             perspective: 1000px;
+            transform-style: preserve-3d;
         }
 
         /* --- TREE LAYOUT (DESKTOP) --- */
@@ -138,6 +141,10 @@
             font-size: 1rem; line-height: 1.6; color: #d1d5db;
             scroll-behavior: smooth;
             overscroll-behavior: contain;
+            /* Enhanced performance for desktop */
+            -webkit-overflow-scrolling: auto;
+            will-change: scroll-position;
+            transform: translate3d(0,0,0);
         }
         /* Scrollbar */
         .card-body::-webkit-scrollbar { width: 8px; }
@@ -231,6 +238,11 @@
                 height: auto;
                 -webkit-overflow-scrolling: touch; /* iOS momentum scrolling */
                 scroll-behavior: smooth;
+                /* Enhanced hardware acceleration for mobile */
+                -webkit-transform: translate3d(0,0,0);
+                -moz-transform: translate3d(0,0,0);
+                -ms-transform: translate3d(0,0,0);
+                transform: translate3d(0,0,0);
             }
             #viewport { 
                 position: static; height: auto; overflow: visible; cursor: default; 
@@ -239,6 +251,9 @@
             #world { 
                 position: static; transform: none !important; display: block; 
                 padding: 80px 16px 40px; width: 100%; 
+                /* Enhanced GPU acceleration */
+                will-change: auto;
+                transform-style: flat;
             }
             
             /* Vertical Stack */
@@ -254,9 +269,23 @@
             .children-stack > .node-wrapper:last-child::after { display: none; }
 
             /* Mobile Card */
-            .card { width: 100%; height: auto; max-height: none; border-radius: 12px; }
+            .card { 
+                width: 100%; 
+                height: auto; 
+                max-height: none; 
+                border-radius: 12px;
+                /* Hardware acceleration for mobile animations */
+                -webkit-transform: translate3d(0,0,0);
+                transform: translate3d(0,0,0);
+            }
             .card-header { padding: 14px; }
-            .card-body { padding: 16px; }
+            .card-body { 
+                padding: 16px; 
+                /* Enhanced mobile scroll performance */
+                -webkit-overflow-scrolling: touch;
+                scroll-behavior: smooth;
+                overscroll-behavior: contain;
+            }
 
             /* Mobile UI */
             .search-bar { width: calc(100% - 32px); top: 16px; }
@@ -297,6 +326,10 @@
             x: 0, y: 0,
             isDragging: false,
             startX: 0, startY: 0,
+            velocityX: 0, velocityY: 0,
+            lastDragTime: 0,
+            lastDragX: 0, lastDragY: 0,
+            isMomentumAnimating: false,
             currentController: null // For AbortController
         };
 
@@ -339,7 +372,8 @@
         
         function updateTransform() {
             if (state.isMobile) return;
-            dom.world.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
+            // Use sub-pixel rendering for ultra-smooth transforms
+            dom.world.style.transform = `translate3d(${state.x.toFixed(2)}px, ${state.y.toFixed(2)}px, 0) scale(${state.scale.toFixed(3)})`;
             if (dom.zoomLevel) {
                 dom.zoomLevel.textContent = `${state.scale.toFixed(1)}x`;
             }
@@ -354,21 +388,78 @@
             state.isDragging = true;
             state.startX = e.clientX - state.x;
             state.startY = e.clientY - state.y;
+            state.lastDragTime = Date.now();
+            state.lastDragX = state.x;
+            state.lastDragY = state.y;
+            state.velocityX = 0;
+            state.velocityY = 0;
+            
+            // Cancel any ongoing momentum animation
+            gsap.killTweensOf(state);
+            state.isMomentumAnimating = false;
+            
             dom.viewport.classList.add('panning');
         });
 
         window.addEventListener('mouseup', () => {
+            if (!state.isDragging) return;
             state.isDragging = false;
             dom.viewport.classList.remove('panning');
+            
+            // Start momentum animation if velocity is significant
+            if (Math.abs(state.velocityX) > 0.1 || Math.abs(state.velocityY) > 0.1) {
+                startMomentumAnimation();
+            }
         });
 
         window.addEventListener('mousemove', (e) => {
             if (!state.isDragging || state.isMobile) return;
             e.preventDefault();
-            state.x = e.clientX - state.startX;
-            state.y = e.clientY - state.startY;
+            
+            const currentX = e.clientX - state.startX;
+            const currentY = e.clientY - state.startY;
+            
+            // Calculate velocity for momentum
+            const currentTime = Date.now();
+            const timeDelta = currentTime - state.lastDragTime;
+            
+            if (timeDelta > 0) {
+                const deltaX = currentX - state.lastDragX;
+                const deltaY = currentY - state.lastDragY;
+                
+                // Calculate velocity (pixels per millisecond)
+                state.velocityX = deltaX / timeDelta;
+                state.velocityY = deltaY / timeDelta;
+            }
+            
+            state.x = currentX;
+            state.y = currentY;
+            state.lastDragX = currentX;
+            state.lastDragY = currentY;
+            state.lastDragTime = currentTime;
+            
             updateTransform();
         });
+
+        // Momentum animation with smooth deceleration
+        function startMomentumAnimation() {
+            state.isMomentumAnimating = true;
+            
+            const momentumX = state.velocityX * 150; // Scale velocity
+            const momentumY = state.velocityY * 150;
+            const duration = Math.max(0.5, Math.min(1.2, Math.abs(momentumX + momentumY) / 200));
+            
+            gsap.to(state, {
+                x: state.x + momentumX,
+                y: state.y + momentumY,
+                duration: duration,
+                ease: "power2.out",
+                onUpdate: updateTransform,
+                onComplete: () => {
+                    state.isMomentumAnimating = false;
+                }
+            });
+        }
 
         dom.viewport.addEventListener('wheel', (e) => {
             if (state.isMobile) return; // Allow native mobile scroll
@@ -379,22 +470,27 @@
             // 1. ZOOM (Ctrl+Wheel OR Pinch on Trackpad)
             if (isCtrl) {
                 e.preventDefault();
-                const delta = e.deltaY * -0.002; // Increased sensitivity for smoother zoom
-                const newScale = Math.min(Math.max(0.3, state.scale + delta), 2.5);
                 
-                // Zoom towards mouse
+                // Cancel any ongoing animations for smooth transitions
+                gsap.killTweensOf(state);
+                
+                const delta = e.deltaY * -0.001; // Reduced for more granular control
+                const currentScale = state.scale;
+                const newScale = Math.min(Math.max(0.3, currentScale + delta), 2.5);
+                
+                // Zoom towards mouse position
                 const rect = dom.viewport.getBoundingClientRect();
                 const mouseX = e.clientX - rect.left;
                 const mouseY = e.clientY - rect.top;
-                const worldX = (mouseX - state.x) / state.scale;
-                const worldY = (mouseY - state.y) / state.scale;
+                const worldX = (mouseX - state.x) / currentScale;
+                const worldY = (mouseY - state.y) / currentScale;
 
-                // Smooth zoom animation with GSAP
+                // Ultra-smooth zoom animation with enhanced GSAP
                 gsap.to(state, {
                     scale: newScale,
                     x: mouseX - worldX * newScale,
                     y: mouseY - worldY * newScale,
-                    duration: 0.15,
+                    duration: 0.1, // Reduced for more responsive feel
                     ease: "power2.out",
                     onUpdate: updateTransform
                 });
@@ -404,15 +500,19 @@
             // 2. SCROLL CARD (If hovering text, let browser handle it)
             if (isOverCard) return;
 
-            // 3. PAN MAP (If hovering background) - Smooth panning with momentum
+            // 3. PAN MAP (If hovering background) - Enhanced smooth panning
             e.preventDefault();
-            const deltaX = e.deltaX * 1.2; // Add momentum factor
-            const deltaY = e.deltaY * 1.2;
+            
+            // Cancel any ongoing momentum animation for smooth transitions
+            gsap.killTweensOf(state);
+            
+            const deltaX = e.deltaX * 1.5; // Enhanced momentum factor
+            const deltaY = e.deltaY * 1.5;
             
             gsap.to(state, {
                 x: state.x - deltaX,
                 y: state.y - deltaY,
-                duration: 0.3,
+                duration: 0.25, // Slightly faster for better responsiveness
                 ease: "power2.out",
                 onUpdate: updateTransform
             });
@@ -629,22 +729,48 @@
         // --- Controls ---
         function zoomIn() {
             if (state.isMobile) return;
-            const newScale = Math.min(2.5, state.scale + 0.15);
+            
+            // Cancel any ongoing animations for smooth transitions
+            gsap.killTweensOf(state);
+            
+            const newScale = Math.min(2.5, state.scale + 0.1); // More granular steps (0.1 vs 0.15)
+            const rect = dom.viewport.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const worldX = (centerX - state.x) / state.scale;
+            const worldY = (centerY - state.y) / state.scale;
+
+            // Ultra-smooth zoom animation with power2.inOut for buttery feel
             gsap.to(state, {
                 scale: newScale,
-                duration: 0.3,
-                ease: "power2.out",
+                x: centerX - worldX * newScale,
+                y: centerY - worldY * newScale,
+                duration: 0.2, // Quicker for better responsiveness
+                ease: "power2.inOut",
                 onUpdate: updateTransform
             });
         }
         
         function zoomOut() {
             if (state.isMobile) return;
-            const newScale = Math.max(0.3, state.scale - 0.15);
+            
+            // Cancel any ongoing animations for smooth transitions
+            gsap.killTweensOf(state);
+            
+            const newScale = Math.max(0.3, state.scale - 0.1); // More granular steps
+            const rect = dom.viewport.getBoundingClientRect();
+            const centerX = rect.width / 2;
+            const centerY = rect.height / 2;
+            const worldX = (centerX - state.x) / state.scale;
+            const worldY = (centerY - state.y) / state.scale;
+
+            // Ultra-smooth zoom animation with power2.inOut
             gsap.to(state, {
                 scale: newScale,
-                duration: 0.3,
-                ease: "power2.out",
+                x: centerX - worldX * newScale,
+                y: centerY - worldY * newScale,
+                duration: 0.2,
+                ease: "power2.inOut",
                 onUpdate: updateTransform
             });
         }
@@ -664,6 +790,53 @@
         // --- Keyboard Shortcuts ---
         window.addEventListener('keydown', (e) => {
             if (state.isMobile) return;
+            
+            // Cancel any ongoing animations for smooth transitions
+            gsap.killTweensOf(state);
+            
+            // Arrow keys for panning
+            if (['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'].includes(e.key)) {
+                e.preventDefault();
+                const panSpeed = e.shiftKey ? 200 : 100; // Faster with Shift
+                const duration = 0.2;
+                const ease = "power2.out";
+                
+                switch(e.key) {
+                    case 'ArrowLeft':
+                        gsap.to(state, {
+                            x: state.x + panSpeed,
+                            duration,
+                            ease,
+                            onUpdate: updateTransform
+                        });
+                        break;
+                    case 'ArrowRight':
+                        gsap.to(state, {
+                            x: state.x - panSpeed,
+                            duration,
+                            ease,
+                            onUpdate: updateTransform
+                        });
+                        break;
+                    case 'ArrowUp':
+                        gsap.to(state, {
+                            y: state.y + panSpeed,
+                            duration,
+                            ease,
+                            onUpdate: updateTransform
+                        });
+                        break;
+                    case 'ArrowDown':
+                        gsap.to(state, {
+                            y: state.y - panSpeed,
+                            duration,
+                            ease,
+                            onUpdate: updateTransform
+                        });
+                        break;
+                }
+                return;
+            }
             
             // Ctrl/Cmd + Plus/Equal for Zoom In
             if ((e.ctrlKey || e.metaKey) && (e.key === '+' || e.key === '=')) {
