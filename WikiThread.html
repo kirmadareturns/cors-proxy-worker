@@ -127,10 +127,14 @@
 
         /* Typography */
         .wiki-text h2 { font-family: 'Space Grotesk'; color: #fff; margin: 1.5rem 0 0.5rem; font-size: 1.4rem; }
-        .wiki-text p { margin-bottom: 1rem; }
-        .wiki-text a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(59,130,246,0.3); }
+        .wiki-text p { margin-bottom: 1rem; max-width: 100%; word-wrap: break-word; }
+        .wiki-text a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(59,130,246,0.3); word-wrap: break-word; }
         .wiki-text a:hover { background: rgba(59,130,246,0.1); }
         .wiki-text ul { list-style: disc; margin-left: 1.5rem; margin-bottom: 1rem; }
+        .wiki-text blockquote { border-left: 4px solid #3b82f6; padding-left: 1rem; margin: 1rem 0; color: #cbd5e1; background: rgba(59,130,246,0.05); padding: 1rem; border-radius: 0 8px 8px 0; }
+        .wiki-text pre { background: #1e1e1e; padding: 1rem; border-radius: 8px; overflow-x: auto; margin: 1rem 0; border: 1px solid #333; }
+        .wiki-text code { background: #1e1e1e; padding: 0.2rem 0.4rem; border-radius: 4px; font-family: 'Courier New', monospace; font-size: 0.9em; color: #f59e0b; }
+        .wiki-text pre code { background: transparent; padding: 0; color: inherit; }
 
         /* --- UI ELEMENTS --- */
         .search-bar {
@@ -219,7 +223,8 @@
             scale: 1,
             x: 0, y: 0,
             isDragging: false,
-            startX: 0, startY: 0
+            startX: 0, startY: 0,
+            currentController: null // For AbortController
         };
 
         const dom = {
@@ -239,13 +244,20 @@
 
             if (state.isMobile !== wasMobile) {
                 if (state.isMobile) {
-                    // Switch to Mobile: Reset transforms, allow native scroll
+                    // Switch to Mobile: Reset ALL transform state, allow native scroll
+                    state.scale = 1;
+                    state.x = 0;
+                    state.y = 0;
                     dom.world.style.transform = '';
                     dom.viewport.style.cursor = 'default';
+                    dom.viewport.style.touchAction = 'auto';
+                    dom.world.style.touchAction = 'auto';
                 } else {
-                    // Switch to Desktop: Center view
+                    // Switch to Desktop: Center view, enable pan/zoom
                     resetView();
                     dom.viewport.style.cursor = 'grab';
+                    dom.viewport.style.touchAction = 'none';
+                    dom.world.style.touchAction = 'none';
                 }
             }
         }
@@ -321,20 +333,55 @@
         // --- Wikipedia Logic ---
         async function fetchSuggestions(query) {
             if (query.length < 2) return [];
+            
+            // Cancel previous request
+            if (state.currentController) {
+                state.currentController.abort();
+            }
+            state.currentController = new AbortController();
+            
             try {
-                const res = await fetch(`${API}&action=opensearch&search=${encodeURIComponent(query)}&limit=5&format=json`);
+                const res = await fetch(`${API}&action=opensearch&search=${encodeURIComponent(query)}&limit=5&format=json`, {
+                    signal: state.currentController.signal
+                });
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                
                 const data = await res.json();
                 return data[1].map((t, i) => ({ title: t, desc: data[2][i] }));
-            } catch { return []; }
+            } catch (error) {
+                if (error.name === 'AbortError') return [];
+                console.warn('Failed to fetch suggestions:', error);
+                return [];
+            } finally {
+                state.currentController = null;
+            }
         }
 
         async function fetchPage(title) {
             try {
                 const res = await fetch(`${API}&action=parse&page=${encodeURIComponent(title)}&format=json&prop=text|displaytitle&redirects=1&disableeditsection=1`);
+                
+                if (!res.ok) {
+                    throw new Error(`HTTP ${res.status}`);
+                }
+                
                 const data = await res.json();
-                if(data.error) throw new Error();
-                return { title: data.parse.displaytitle, html: data.parse.text['*'] };
-            } catch { return null; }
+                if (data.error) {
+                    throw new Error(data.error.info || 'Wikipedia API Error');
+                }
+                
+                if (!data.parse || !data.parse.text || !data.parse.text['*']) {
+                    throw new Error('Invalid response format');
+                }
+                
+                return { title: data.parse.displaytitle || title, html: data.parse.text['*'] };
+            } catch (error) {
+                console.warn(`Failed to fetch page "${title}":`, error);
+                return { error: error.message };
+            }
         }
 
         function createNode(title, parentStack = null) {
@@ -373,13 +420,28 @@
 
             fetchPage(title).then(data => {
                 const body = card.querySelector('.card-body');
-                if(!data) {
-                    body.innerHTML = '<div style="color:#ef4444">Page not found.</div>';
+                
+                if(!data || data.error) {
+                    const errorMsg = data?.error || 'Unable to load page from Wikipedia';
+                    body.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100px;color:#ef4444;gap:10px;">
+                        <i class="ri-error-warning-line" style="font-size:1.5rem;"></i>
+                        <div>${errorMsg}</div>
+                        <div style="font-size:0.8em;color:#888;">Please check your connection and try again</div>
+                    </div>`;
                     return;
                 }
                 
-                // Clean HTML
-                const clean = DOMPurify.sanitize(data.html, { FORBID_TAGS: ['style','script','iframe','form'] });
+                // Clean HTML with improved sanitization to preserve formatting
+                const clean = DOMPurify.sanitize(data.html, {
+                    FORBID_TAGS: ['style','script','iframe','form','meta','link'],
+                    ALLOWED_TAGS: [
+                        'p','br','strong','b','em','i','u','s','a','h1','h2','h3','h4','h5','h6',
+                        'ul','ol','li','blockquote','pre','code','span','div','table','tr','td','th',
+                        'thead','tbody','caption','img','sup','sub'
+                    ],
+                    ALLOWED_ATTR: ['href','src','alt','title','class','id','colspan','rowspan','align'],
+                    FORBID_ATTR: ['onclick','onload','onerror','onmouseover','onfocus','onblur','onchange','onsubmit','onreset']
+                });
                 card.querySelector('.card-title').innerHTML = data.title;
                 body.innerHTML = clean;
                 body.classList.add('wiki-text');
@@ -414,15 +476,34 @@
 
         function removeNode(icon) {
             const wrapper = icon.closest('.node-wrapper');
-            gsap.to(wrapper, { opacity:0, height:0, duration:0.3, onComplete: () => wrapper.remove() });
+            const card = wrapper.querySelector('.card');
+            
+            // Disable interaction during animation
+            card.style.pointerEvents = 'none';
+            card.style.opacity = '0.5';
+            
+            gsap.to(wrapper, { 
+                opacity:0, 
+                height:0, 
+                margin:0, 
+                padding:0,
+                duration:0.3, 
+                onComplete: () => wrapper.remove() 
+            });
         }
 
         // --- Search ---
         let debounce;
         dom.input.addEventListener('input', (e) => {
-            clearTimeout(debounce);
+            // Clear existing timeout
+            if (debounce) clearTimeout(debounce);
+            
             const val = e.target.value;
-            if(val.length < 2) { dom.suggestions.classList.remove('active'); return; }
+            if(val.length < 2) { 
+                dom.suggestions.classList.remove('active'); 
+                dom.loader.style.opacity = 0;
+                return; 
+            }
             
             dom.loader.style.opacity = 1;
             debounce = setTimeout(async () => {
@@ -434,19 +515,25 @@
 
         function renderSuggestions(list) {
             dom.suggestions.innerHTML = '';
-            if(!list.length) { dom.suggestions.classList.remove('active'); return; }
             
-            list.forEach(item => {
-                const div = document.createElement('div');
-                div.className = 's-item';
-                div.innerHTML = `<span>${item.title}</span><span style="font-size:0.8em; opacity:0.5;">${item.desc || ''}</span>`;
-                div.onclick = () => {
-                    createNode(item.title);
-                    dom.suggestions.classList.remove('active');
-                    dom.input.value = '';
-                };
-                dom.suggestions.appendChild(div);
-            });
+            if(list.length === 0) {
+                const noResults = document.createElement('div');
+                noResults.style.cssText = 'padding: 16px; text-align: center; color: #888; font-style: italic;';
+                noResults.innerHTML = '<i class="ri-search-line" style="margin-right:8px;"></i>No results found';
+                dom.suggestions.appendChild(noResults);
+            } else {
+                list.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 's-item';
+                    div.innerHTML = `<span>${item.title}</span><span style="font-size:0.8em; opacity:0.5;">${item.desc || ''}</span>`;
+                    div.onclick = () => {
+                        createNode(item.title);
+                        dom.suggestions.classList.remove('active');
+                        dom.input.value = '';
+                    };
+                    dom.suggestions.appendChild(div);
+                });
+            }
             dom.suggestions.classList.add('active');
         }
 
@@ -462,8 +549,23 @@
         }
 
         // Init
-        checkDevice();
-        createNode("Internet");
+        function init() {
+            checkDevice();
+            createNode("Internet");
+            
+            // Force re-render of connector lines after initial load
+            if(!state.isMobile) {
+                setTimeout(() => {
+                    // Force reflow by adding and removing a class
+                    const world = document.getElementById('world');
+                    world.style.display = 'none';
+                    world.offsetHeight; // Trigger reflow
+                    world.style.display = '';
+                }, 100);
+            }
+        }
+        
+        init();
 
     </script>
 </body>
