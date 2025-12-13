@@ -2,257 +2,203 @@ document.addEventListener('DOMContentLoaded', () => {
     const codeInput = document.getElementById('codeInput');
     const highlightingContent = document.getElementById('highlighting-content');
     const explanationOutput = document.getElementById('explanationOutput');
-    const healthStatus = document.getElementById('healthStatus');
 
-    // --- 1. THE JARGON DICTIONARY ---
-    // This translates "Dev Speak" into "Human Speak"
-    const terms = {
-        'bg': 'Background Color',
-        'btn': 'Button',
-        'nav': 'Navigation Bar',
-        'col': 'Column',
-        'container': 'Content Box',
-        'wrapper': 'Outer Holder',
-        'flex': 'Auto-Layout',
-        'grid': 'Grid Layout',
-        'justify': 'Alignment',
-        'align': 'Positioning',
-        'gap': 'Spacing between items',
-        'border': 'Outline',
-        'radius': 'Rounded Corners',
-        'font': 'Typography',
-        'src': 'Source File',
-        'href': 'Web Link',
-        'div': 'Section',
-        'span': 'Text Wrapper',
-        'img': 'Image',
-        'ul': 'List',
-        'li': 'List Item',
-        'p': 'Paragraph',
-        'h1': 'Main Headline',
-        'h2': 'Sub-headline',
-        'const': 'Fixed Value',
-        'let': 'Changeable Value',
-        'var': 'Variable',
-        'func': 'Action',
-        'init': 'Start Up',
-        'accent': 'Main Highlight Color',
-        'primary': 'Main Brand Color',
-        'secondary': 'Secondary Brand Color'
+    // --- 1. THE CONCEPT ENGINE ---
+    // Instead of translating words, we identify "Intent"
+    const analyzeLine = (line) => {
+        const text = line.trim();
+        if (!text || text.startsWith('//') || text.startsWith('/*')) return null;
+
+        // --- CSS CONCEPTS ---
+        if (text.includes(':')) {
+            const [prop, val] = text.split(':');
+            const cleanVal = val.replace(';', '').trim();
+
+            // 1. AESTHETICS (Color & Background)
+            if (prop.match(/color|background|fill|stroke/)) {
+                return {
+                    title: "🎨 Aesthetics & Theme",
+                    desc: `You are painting this element with a specific color.`,
+                    tweak: `Change <code>${cleanVal}</code> to a hex code like <code>#ff0055</code> (Pink) or <code>#000</code> (Black) to completely change the vibe.`
+                };
+            }
+
+            // 2. LAYOUT (Flexbox/Grid)
+            if (val.includes('flex') || val.includes('grid')) {
+                return {
+                    title: "🧩 The Layout Engine",
+                    desc: `You are activating a Smart Layout system. This tells the browser: "Don't just stack things; arrange them intelligently."`,
+                    tweak: `If you delete this line, your layout will break and elements will just stack on top of each other.`
+                };
+            }
+
+            // 3. SPACING (Margin/Padding/Gap)
+            if (prop.match(/margin|padding|gap/)) {
+                return {
+                    title: "📐 Breathing Room",
+                    desc: `You are controlling the empty space around the content.`,
+                    tweak: `Increase <code>${cleanVal}</code> (e.g., double it) to make the design feel more open and clean. Decrease it to make it compact.`
+                };
+            }
+
+            // 4. TYPOGRAPHY (Fonts)
+            if (prop.match(/font-|text-align/)) {
+                return {
+                    title: "abc Typography",
+                    desc: `You are controlling how the text looks and reads.`,
+                    tweak: `Try changing the font size or family to match your brand's style.`
+                };
+            }
+            
+            // 5. SIZE (Width/Height)
+            if (prop.match(/width|height/)) {
+                return {
+                    title: "📏 Dimensions",
+                    desc: `You are forcing this element to be a specific size.`,
+                    tweak: `Be careful! Fixed sizes like <code>${cleanVal}</code> can break on mobile phones. Consider using percentages (e.g., 100%) instead.`
+                };
+            }
+
+            return { title: "💅 Styling Rule", desc: "A standard visual rule.", tweak: "Change the value to adjust the look." };
+        }
+
+        // --- HTML CONCEPTS ---
+        if (text.startsWith('<')) {
+            if (text.match(/<div|<section|<main|<header|<footer/)) {
+                const className = text.match(/class="([^"]+)"/)?.[1];
+                return {
+                    title: "📦 Structural Box",
+                    desc: `You are building a container to hold other items.${className ? ` It has the nametag <strong>"${className}"</strong>.` : ''}`,
+                    tweak: className ? `Go to your CSS and find <code>.${className}</code> to style this specific box.` : `Add <code>class="my-box"</code> so you can style it later.`
+                };
+            }
+            if (text.match(/<img|<video/)) {
+                return {
+                    title: "🖼️ Media Asset",
+                    desc: `You are embedding an image or video file.`,
+                    tweak: `Change the <code>src="..."</code> link to swap the image.`
+                };
+            }
+            if (text.match(/<h[1-6]|<p|<span|<a|<button/)) {
+                return {
+                    title: "📝 Visible Content",
+                    desc: `This is text or a button that the user actually reads and clicks.`,
+                    tweak: `Edit the text between the tags <code>>...<</code> to say what you want.`
+                };
+            }
+        }
+
+        // --- JS CONCEPTS ---
+        
+        // 1. DATA (Variables)
+        if (text.match(/(const|let|var)\s+(\w+)/)) {
+            const name = text.match(/(const|let|var)\s+(\w+)/)[2];
+            return {
+                title: "🧠 Memory Storage",
+                desc: `You are creating a label named <strong>"${name}"</strong> to remember some data.`,
+                tweak: `Anywhere else in this file, you can type <code>${name}</code> to use this saved data.`
+            };
+        }
+
+        // 2. INTERACTIONS (Event Listeners)
+        if (text.includes('addEventListener')) {
+            const evt = text.match(/'(\w+)'/)?.[1] || 'event';
+            return {
+                title: "⚡ Interaction Trigger",
+                desc: `The code is now "Listening" for a <strong>${evt}</strong>. It is waiting for the user to do something.`,
+                tweak: `The code inside the <code>{ ... }</code> is what happens <em>after</em> the user triggers this.`
+            };
+        }
+
+        // 3. DOM MANIPULATION (Selectors)
+        if (text.includes('querySelector') || text.includes('getElementById')) {
+            return {
+                title: "🪝 The Hook",
+                desc: `JavaScript is reaching into your HTML to grab a specific element so it can control it.`,
+                tweak: `Ensure the ID or Class inside the quotes actually exists in your HTML file.`
+            };
+        }
+
+        // 4. LOGIC (Functions)
+        if (text.includes('function') || text.includes('=>')) {
+            return {
+                title: "⚙️ The Recipe",
+                desc: `You are defining a reusable set of instructions.`,
+                tweak: `This code doesn't run yet. It only runs when you "call" this function name later.`
+            };
+        }
+
+        return null; // Skip unknown lines to keep noise down
     };
 
-    // --- 2. UTILITY: Humanizer ---
-    // Turns "bg-panel" into "Background Color of the Panel"
-    const humanize = (text) => {
-        // Remove symbols like --, ., #
-        let clean = text.replace(/[-_#.]/g, ' ').trim();
+    // --- 2. THE UI UPDATER ---
+    const updateInterface = () => {
+        const code = codeInput.value;
         
-        // Split into words
-        let words = clean.split(' ');
-        
-        // Translate each word using our dictionary
-        let translated = words.map(word => {
-            // Check dictionary (case insensitive)
-            const key = word.toLowerCase();
-            return terms[key] || word; // Return translation OR original word
+        // Highlight Syntax
+        highlightingContent.innerHTML = code
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;");
+        Prism.highlightElement(highlightingContent);
+
+        // Generate Insights
+        const lines = code.split('\n');
+        explanationOutput.innerHTML = ''; 
+
+        let hasContent = false;
+
+        lines.forEach((line, index) => {
+            const insight = analyzeLine(line);
+            if (!insight) return; // Skip empty/irrelevant lines
+            
+            hasContent = true;
+
+            const card = document.createElement('div');
+            card.className = 'insight-card';
+            card.innerHTML = `
+                <div class="card-header">
+                    <span class="concept-tag">${insight.title}</span>
+                    <span class="line-badge">Line ${index + 1}</span>
+                </div>
+                <div class="card-body">
+                    ${insight.desc}
+                    <div class="tweak-section">
+                        <span class="tweak-title"><i class="fa-solid fa-screwdriver-wrench"></i> How to Customize</span>
+                        ${insight.tweak}
+                    </div>
+                </div>
+            `;
+            explanationOutput.appendChild(card);
         });
 
-        // Join back together
-        return translated.join(' ');
+        if (!hasContent && code.trim().length > 0) {
+            explanationOutput.innerHTML = `<div class="empty-state"><p>Keep typing... waiting for a complete thought.</p></div>`;
+        } else if (code.trim().length === 0) {
+            explanationOutput.innerHTML = `
+                <div class="empty-state">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <p>Paste your code on the left.<br>I will tell you how to customize it.</p>
+                </div>`;
+        }
     };
 
-    // --- 3. UTILITY: Language Detector ---
-    const detectLanguage = (code) => {
-        if (code.trim().startsWith('<')) return 'HTML';
-        if (code.includes('{') && code.includes(':') && !code.includes('function') && !code.includes('const')) return 'CSS';
-        return 'JS';
-    };
-
-    // --- 4. DEBOUNCE ---
-    function debounce(func, wait) {
+    // --- 3. SCROLL SYNC & DEBOUNCE ---
+    const debounce = (func, wait) => {
         let timeout;
         return function(...args) {
             clearTimeout(timeout);
             timeout = setTimeout(() => func.apply(this, args), wait);
         };
-    }
-
-    // --- 5. THE ANALYZER ENGINE ---
-    const runAnalysis = () => {
-        const code = codeInput.value;
-        const language = detectLanguage(code);
-        const lines = code.split('\n');
-        
-        explanationOutput.innerHTML = '';
-        
-        // ONLY Run JSHint if it is actually JavaScript
-        let errors = [];
-        if (language === 'JS') {
-            JSHINT(code, { esversion: 6 });
-            errors = JSHINT.errors || [];
-        }
-        
-        // Update Status Badge
-        if (errors.length > 0) {
-            healthStatus.className = 'health-badge issue';
-            healthStatus.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ${errors.length} Issues Found`;
-        } else {
-            healthStatus.className = 'health-badge healthy';
-            healthStatus.innerHTML = `<i class="fa-solid fa-check"></i> ${language} Detected`;
-        }
-
-        lines.forEach((line, i) => {
-            const lineNum = i + 1;
-            const text = line.trim();
-            if (!text || text.startsWith('//') || text.startsWith('/*')) return;
-
-            const lineError = errors.find(e => e && e.line === lineNum);
-            
-            // Generate Explanation based on detected language
-            let insight = '';
-            if (language === 'CSS') insight = explainCSS(text, lineNum);
-            else if (language === 'HTML') insight = explainHTML(text, lineNum);
-            else insight = explainJS(text, lineNum, lineError);
-
-            // Render
-            const card = document.createElement('div');
-            card.className = lineError ? 'insight-card error-card' : 'insight-card';
-            card.innerHTML = insight;
-            explanationOutput.appendChild(card);
-        });
-        
-        tippy('[data-tippy-content]');
     };
 
-    // --- 6. TRANSLATION LOGIC ---
-
-    const explainCSS = (text, lineNum) => {
-        // Handle CSS Variables (e.g., --bg-panel: #000)
-        if (text.startsWith('--')) {
-            const parts = text.split(':');
-            const property = parts[0].trim(); // --bg-panel
-            const value = parts[1]?.replace(';', '').trim(); // #000
-            
-            const humanProp = humanize(property);
-
-            return `
-                <span class="line-ref">Line ${lineNum}</span>
-                <span class="insight-title"><i class="fa-solid fa-palette"></i> Theme Setting</span>
-                <div class="insight-body">
-                    You are defining the <strong>${humanProp}</strong>.
-                    <br>Currently set to: <strong style="border-bottom: 2px solid ${value};">${value}</strong>.
-                    <div class="tip-box">
-                        <span class="tip-label">MAKE IT YOURS</span>
-                        Change <code>${value}</code> to any other color to update the ${humanProp} across the whole site.
-                    </div>
-                </div>
-            `;
-        }
-
-        // Handle Standard CSS Rules (e.g., background-color: red)
-        if (text.includes(':') && text.includes(';')) {
-            const parts = text.split(':');
-            const prop = parts[0].trim();
-            const val = parts[1].replace(';', '').trim();
-            const humanProp = humanize(prop);
-
-            return `
-                <span class="line-ref">Line ${lineNum}</span>
-                <span class="insight-title"><i class="fa-brands fa-css3-alt"></i> Style Rule</span>
-                <div class="insight-body">
-                    This controls the <strong>${humanProp}</strong>.
-                    <div class="tip-box">
-                        <span class="tip-label">TRY THIS</span>
-                        ${getCSSAdvice(prop, val)}
-                    </div>
-                </div>
-            `;
-        }
-        
-        // Handle Selectors (e.g., .panel { )
-        if (text.includes('{')) {
-            const selector = text.replace('{', '').trim();
-            const humanSelector = humanize(selector);
-            return `
-                <span class="line-ref">Line ${lineNum}</span>
-                <span class="insight-title"><i class="fa-solid fa-bullseye"></i> Target</span>
-                <div class="insight-body">
-                    <strong>Starting a new section:</strong> Any rules below this line will apply to the <strong>"${humanSelector}"</strong>.
-                </div>
-            `;
-        }
-
-        return `<span class="line-ref">Line ${lineNum}</span><div class="insight-body">Styling structure.</div>`;
-    };
-
-    const explainHTML = (text, lineNum) => {
-        if (text.match(/<(\w+)/)) {
-            const tag = text.match(/<(\w+)/)[1];
-            const humanTag = terms[tag] || tag; // Translate 'div' to 'Section', 'img' to 'Image'
-            
-            return `
-                <span class="line-ref">Line ${lineNum}</span>
-                <span class="insight-title"><i class="fa-brands fa-html5"></i> Structure</span>
-                <div class="insight-body">
-                    You are placing a <strong>${humanTag}</strong> here.
-                    ${text.includes('class=') ? '<br>It uses a class for styling (check your CSS).' : ''}
-                </div>
-            `;
-        }
-        return `<span class="line-ref">Line ${lineNum}</span><div class="insight-body">HTML Structure.</div>`;
-    };
-
-    const explainJS = (text, lineNum, error) => {
-        if (error) {
-             return `
-                <span class="line-ref">Line ${lineNum}</span>
-                <span class="insight-title" style="color:#ff4757;"><i class="fa-solid fa-bug"></i> Critical Error</span>
-                <div class="insight-body">
-                    JSHint found an issue: ${error.reason}. <br><em>Check for typos or missing brackets.</em>
-                </div>
-            `;
-        }
-
-        if (text.includes('const') || text.includes('let') || text.includes('var')) {
-             const parts = text.split('=');
-             const varName = parts[0].replace(/(const|let|var)/, '').trim();
-             const humanName = humanize(varName); // Turns 'userScore' to 'User Score'
-
-             return `
-                <span class="line-ref">Line ${lineNum}</span>
-                <span class="insight-title"><i class="fa-solid fa-memory"></i> Memory Slot</span>
-                <div class="insight-body">
-                    Creating a value called <strong>"${humanName}"</strong>.
-                    <br>Value: <code>${parts[1]?.replace(';', '').trim()}</code>
-                </div>
-            `;
-        }
-        
-        return `<span class="line-ref">Line ${lineNum}</span><div class="insight-body">Logic calculation.</div>`;
-    };
-
-    // --- 7. ADVICE GENERATOR ---
-    const getCSSAdvice = (prop, val) => {
-        if (prop.includes('color') || prop.includes('background')) return "Change the hex code to recolor this element.";
-        if (prop.includes('width') || prop.includes('height')) return "Increase the number to make this element bigger.";
-        if (prop.includes('margin')) return "Increase this number to push other items further away (more space).";
-        if (prop.includes('padding')) return "Increase this number to make the box fatter on the inside.";
-        if (prop.includes('font')) return "Change the font name or size to update the text style.";
-        if (prop.includes('display') && val.includes('flex')) return "This aligns items in a row. Change 'flex' to 'block' to stack them.";
-        return "Tweak this value to see how the design changes.";
-    };
-
-    // --- 8. INIT ---
-    const updateInterface = () => {
-        const code = codeInput.value;
-        highlightingContent.innerHTML = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-        Prism.highlightElement(highlightingContent);
-        runAnalysis();
-    };
-
+    // 
     codeInput.addEventListener('scroll', () => {
-        codeInput.closest('.editor-wrapper').querySelector('pre').scrollTop = codeInput.scrollTop;
+        const wrapper = codeInput.closest('.editor-wrapper');
+        const pre = wrapper.querySelector('pre');
+        pre.scrollTop = codeInput.scrollTop;
+        pre.scrollLeft = codeInput.scrollLeft;
     });
 
-    codeInput.addEventListener('input', debounce(updateInterface, 500));
+    codeInput.addEventListener('input', debounce(updateInterface, 400));
 });
