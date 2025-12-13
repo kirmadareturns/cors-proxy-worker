@@ -1,11 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
+    // These get the actual HTML elements from the DOM so we can control them
     const codeInput = document.getElementById('codeInput');
     const highlightingContent = document.getElementById('highlighting-content');
     const explanationOutput = document.getElementById('explanationOutput');
 
     // --- UTILITY: Debounce ---
     // 
-    // Prevents the function from running until you stop typing for 500ms.
+    // PURPOSE: Performance optimization.
+    // Without this, the app would crash trying to explain every single letter you type.
+    // It forces the code to wait until you *stop* typing for 500ms.
     function debounce(func, wait) {
         let timeout;
         return function(...args) {
@@ -14,84 +17,63 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     }
 
-    // --- CORE: Context-Aware Parser ---
+    // --- CORE: The Logic Engine ---
     const explainLine = (line) => {
         const text = line.trim();
         if (!text) return null;
 
-        // 1. COMMENT PASS-THROUGH
-        // If the line is a comment, treat it as a header/explanation.
+        // 1. COMMENTS (The Developer's Voice)
         if (text.startsWith('//')) {
-            return `<strong style="color: #4CAF50;">NOTE:</strong> ${text.replace('//', '').trim()}`;
+            return `<span style="color:#4CAF50; font-weight:bold;">📝 ARCHITECTURE NOTE:</span> ${text.replace('//', '')}`;
         }
 
-        // 2. HTML SPECIFIC PARSING
-        if (text.startsWith('<')) {
-            if (text.match(/<!DOCTYPE/i)) return "Browser Instruction: Use HTML5 standards.";
-            if (text.match(/<div/)) return "<strong>Container:</strong> Creates a generic division/section.";
-            if (text.match(/<span/)) return "<strong>Inline Container:</strong> wraps text for styling without breaking lines.";
-            if (text.match(/class="/)) return "<strong>Attribute:</strong> Assigns a class name for CSS styling.";
-            if (text.match(/id="/)) return "<strong>Attribute:</strong> Assigns a unique ID for JavaScript targeting.";
-            if (text.match(/<\/.*>/)) return "<strong>Closing Tag:</strong> Ends the previous element.";
-        }
-
-        // 3. JAVASCRIPT SPECIFIC PARSING
+        // 2. PROJECT-SPECIFIC LOGIC (Self-Awareness)
+        // This section explains THIS app's specific variables.
         
-        // Variable Declaration Extraction
-        // Pattern: const myVar = ...
-        const varMatch = text.match(/(const|let|var)\s+(\w+)\s*=/);
-        if (varMatch) {
-            const type = varMatch[1] === 'const' ? 'constant (unchangeable)' : 'variable';
-            const name = varMatch[2];
-            
-            if (text.includes('document.getElementById')) {
-                return `<strong>DOM Selection:</strong> Finds the HTML element with ID and stores it in '${name}'.`;
-            }
-            if (text.includes('querySelector')) {
-                return `<strong>DOM Selection:</strong> Finds the first CSS-selector match and stores it in '${name}'.`;
-            }
-            return `<strong>Declaration:</strong> Creates a ${type} named '${name}'.`;
+        // Input Handling
+        if (text.includes('codeInput.value')) return "<strong>Data Fetch:</strong> Grabs the raw text you just typed into the left panel.";
+        if (text.includes('codeInput.addEventListener')) return "<strong>Trigger:</strong> Watch for typing ('input') or scrolling ('scroll').";
+        
+        // Syntax Highlighting Logic
+        if (text.includes('highlightingContent')) return "<strong>Visual Layer:</strong> Refers to the hidden background layer that handles the colors.";
+        if (text.includes('Prism.highlightElement')) return "<strong>Library Call:</strong> Asks Prism.js to repaint the colors based on the new code.";
+        if (text.includes('replace(/&/g')) return "<strong>Sanitization:</strong> Prevents code injection by turning special characters into safe HTML entities.";
+        
+        // Output Logic
+        if (text.includes('explanationOutput')) return "<strong>Target Container:</strong> The right-side panel where these explanation blocks are inserted.";
+        if (text.includes('explanationOutput.innerHTML = \'\'')) return "<strong>Reset:</strong> Wipes the right panel clean before adding the new explanations.";
+        if (text.includes('explanationOutput.appendChild')) return "<strong>Render:</strong> Inserts a newly generated explanation block into the DOM.";
+
+        // 3. GENERAL PATTERNS (With "Vibe" Context)
+        
+        // HTML Tags
+        if (text.match(/<div/)) return "<strong>Structure:</strong> Creates a box/container. Change the 'class' to change how it looks.";
+        if (text.match(/<span/)) return "<strong>Styling Wrapper:</strong> Wraps a small piece of text (like a keyword) to apply color.";
+        if (text.match(/class="/)) return "<strong>CSS Hook:</strong> Links this element to the stylesheet. This is how it gets its 'Vibe'.";
+
+        // JS Logic
+        if (text.includes('const ') || text.includes('let ')) {
+            const varName = text.split(' ')[1];
+            return `<strong>Memory:</strong> Creates a box named <code>${varName}</code> to save data for later use.`;
         }
+        if (text.includes('if (!text)')) return "<strong>Guard Clause:</strong> If the line is empty, stop immediately to save processing power.";
+        if (text.includes('=>')) return "<strong>Action:</strong> Defines a mini-function to do a specific task.";
+        if (text.includes('return')) return "<strong>Result:</strong> Finishes the calculation and hands back the answer.";
 
-        // Function Logic
-        if (text.match(/function\s+(\w+)/)) {
-            const funcName = text.match(/function\s+(\w+)/)[1];
-            return `<strong>Function Start:</strong> Defines a reusable block of logic named '${funcName}'.`;
-        }
-        if (text.includes('=>')) return "<strong>Arrow Function:</strong> A concise way to write a function.";
-
-        // Event Listeners
-        if (text.includes('.addEventListener')) {
-            const eventType = text.match(/'(\w+)'/) ? text.match(/'(\w+)'/)[1] : 'event';
-            return `<strong>Interaction:</strong> Listens for the '${eventType}' event (e.g., click/input) to trigger code.`;
-        }
-
-        // DOM Manipulation
-        if (text.includes('.innerHTML')) return "<strong>Update UI:</strong> Replaces the HTML content inside the element.";
-        if (text.includes('.textContent')) return "<strong>Update UI:</strong> Changes the raw text inside the element.";
-        if (text.includes('.classList.add')) return "<strong>Style Logic:</strong> Adds a CSS class to the element to change its look.";
-        if (text.includes('.style.')) return "<strong>Direct Styling:</strong> Modifies a specific CSS property directly via JS.";
-
-        // Control Flow
-        if (text.startsWith('if')) return "<strong>Condition:</strong> Checks if a statement is true before running the code block.";
-        if (text.startsWith('return')) return "<strong>Output:</strong> Exits the function and sends a result back.";
-        if (text.startsWith('}')) return "<strong>End Block:</strong> Closes the current function or loop.";
-
-        // --- CSS SPECIFIC PARSING (Basic) ---
-        if (text.includes('{')) return "<strong>Start Rule:</strong> Opens a new styling block.";
-        if (text.includes(':') && text.includes(';')) {
-            const parts = text.split(':');
-            return `<strong>Style Property:</strong> Sets <code style="background:#444; padding:2px;">${parts[0].trim()}</code> to <em>${parts[1].replace(';', '').trim()}</em>.`;
-        }
+        // CSS Logic
+        if (text.includes('display: flex')) return "<strong>Layout Engine:</strong> Activates Flexbox, allowing you to align items in rows or columns easily.";
+        if (text.includes('color:')) return "<strong>Aesthetics:</strong> Changes the text color.";
+        if (text.includes('background:')) return "<strong>Aesthetics:</strong> Changes the background color or texture.";
 
         // Fallback
-        return "Executes code (Logic line)";
+        return "<strong>Logic Step:</strong> Standard code execution.";
     };
 
     const updateInterface = () => {
         const code = codeInput.value;
 
-        // Escape HTML for the highlighter overlay
+        // Step 1: Handle the visual syntax highlighting
+        // We manually escape HTML characters so they display as text, not run as code.
         highlightingContent.innerHTML = code
             .replace(/&/g, "&amp;")
             .replace(/</g, "&lt;")
@@ -99,6 +81,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         Prism.highlightElement(highlightingContent);
 
+        // Step 2: Generate Explanations
         const lines = code.split('\n');
         explanationOutput.innerHTML = ''; 
 
@@ -108,11 +91,8 @@ document.addEventListener('DOMContentLoaded', () => {
             if (explanation) {
                 const item = document.createElement('div');
                 item.className = 'line-explanation';
-                // Add a specific class if it's a comment for styling
-                const isComment = line.trim().startsWith('//');
-                
                 item.innerHTML = `
-                    <span class="line-number" style="${isComment ? 'color: #4CAF50;' : ''}">Line ${index + 1}</span>
+                    <span class="line-number">Line ${index + 1}</span>
                     <div class="text">
                         <span class="code-snippet">${line.substring(0, 40)}${line.length > 40 ? '...' : ''}</span>
                         <div class="explainer-text">${explanation}</div>
@@ -123,9 +103,11 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    // Attach the Debounce logic to the input
+    // "Wait 500ms after the last keystroke before updating"
     codeInput.addEventListener('input', debounce(updateInterface, 500));
 
-    // Scroll Sync
+    // Scroll Sync: This ensures the text and the colors move together
     codeInput.addEventListener('scroll', () => {
         const wrapper = codeInput.closest('.editor-wrapper');
         const pre = wrapper.querySelector('pre');
