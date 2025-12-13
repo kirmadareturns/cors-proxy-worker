@@ -155,12 +155,6 @@
         .btn { width: 44px; height: 44px; background: #18181b; border: 1px solid var(--border); border-radius: 10px; color: #a1a1aa; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
         .btn:hover { border-color: var(--accent); color: white; background: #27272a; }
 
-        .hint {
-            position: fixed; bottom: 30px; left: 30px; background: rgba(59,130,246,0.1);
-            border: 1px solid rgba(59,130,246,0.2); color: #60a5fa;
-            padding: 8px 16px; border-radius: 8px; font-size: 0.85rem; pointer-events: none;
-        }
-
         /* --- MOBILE OVERRIDES --- */
         @media (max-width: 768px) {
             body { 
@@ -192,7 +186,6 @@
             .search-bar { width: calc(100% - 32px); top: 16px; }
             .suggestions { width: calc(100% - 32px); }
             .controls { display: none; }
-            .hint { display: none; }
         }
 
         .spinner { border: 2px solid #333; border-top-color: var(--accent); border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
@@ -214,7 +207,6 @@
         <button class="btn" onclick="resetView()"><i class="ri-focus-2-line"></i></button>
     </div>
 
-    <div class="hint">Drag background to pan • Ctrl+Scroll to Zoom</div>
 
     <div id="viewport">
         <div id="world"></div>
