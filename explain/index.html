@@ -3,48 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Codebase AI (Client-Side)</title>
-    
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
+    <title>The Vibe Coder (Pro Edition)</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/esprima/4.0.1/esprima.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jshint/2.13.6/jshint.min.js"></script> <script src="https://unpkg.com/@popperjs/core@2"></script>
-    <script src="https://unpkg.com/tippy.js@6"></script>
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-    <main class="app-container">
-        <section class="panel input-panel">
+    <div class="app-container">
+        <div class="panel code-panel">
             <div class="panel-header">
-                <span class="badge">INPUT</span>
-                <span id="healthStatus" class="health-badge healthy"><i class="fa-solid fa-check"></i> Code Healthy</span>
+                <span><i class="fa-solid fa-code"></i> SOURCE CODE</span>
             </div>
             <div class="editor-wrapper">
-                <textarea id="codeInput" spellcheck="false" placeholder="// Paste code here...
-const user = 'Admin';
-if(user) {
-   console.log('Welcome');
-}"></textarea>
+                <textarea id="codeInput" spellcheck="false" placeholder="Paste your HTML, CSS, or JS here..."></textarea>
                 <pre aria-hidden="true"><code id="highlighting-content" class="language-javascript"></code></pre>
             </div>
-        </section>
+        </div>
 
-        <section class="panel output-panel">
+        <div class="panel guide-panel">
             <div class="panel-header">
-                <span class="badge">AI INSIGHTS</span>
+                <span><i class="fa-solid fa-user-astronaut"></i> DEVELOPER INSIGHTS</span>
             </div>
             <div id="explanationOutput" class="explanation-content">
-                <div class="placeholder-state">
-                    <i class="fa-solid fa-microchip fa-3x"></i>
-                    <p>Awaiting Code Input...</p>
+                <div class="empty-state">
+                    <i class="fa-solid fa-layer-group"></i>
+                    <p>Paste your code on the left.<br>I will tell you how to customize it.</p>
                 </div>
             </div>
-        </section>
-    </main>
+        </div>
+    </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
     <script src="app.js"></script>
