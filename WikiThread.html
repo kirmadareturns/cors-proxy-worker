@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>WikiFractal | Adaptive Engine</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
@@ -10,277 +10,504 @@
     <link href="https://cdn.jsdelivr.net/npm/remixicon@3.5.0/fonts/remixicon.css" rel="stylesheet">
 
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;600&family=Inter:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600&family=Inter:wght@400;500&display=swap');
 
-        /* --- Base Variables --- */
         :root {
-            --bg-color: #0a0a0f;
-            --card-bg: #121216;
-            --line-color: #333;
+            --bg: #050508;
+            --card-bg: #0f0f14;
+            --border: #222228;
             --accent: #3b82f6;
+            --text: #cbd5e1;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        * { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
         
         body { 
-            background: var(--bg-color);
-            color: #e2e8f0; 
-            font-family: 'Inter', sans-serif; 
-            width: 100vw; 
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+            width: 100vw;
             height: 100vh;
-            overflow: hidden; /* Desktop default */
         }
 
-        /* --- DESKTOP LAYOUT (Default) --- */
-        
+        /* --- DESKTOP LAYOUT --- */
         #viewport {
-            width: 100%; height: 100%;
-            overflow: hidden; cursor: grab;
-            position: relative; touch-action: none;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            cursor: grab;
+            position: relative;
+            touch-action: none;
         }
+        #viewport.panning { cursor: grabbing; }
         
         #world {
             position: absolute;
             display: flex;
-            padding: 50vh 50vw;
+            padding: 50vh 100px 100px 100px;
             transform-origin: 0 0;
             will-change: transform;
         }
 
-        .node-wrapper { display: flex; align-items: center; gap: 80px; position: relative; }
-        .children-stack { display: flex; flex-direction: column; gap: 40px; position: relative; }
-
-        /* Desktop Connectors */
-        .desktop-connector-h { position: absolute; left: -80px; top: 50%; width: 80px; height: 2px; background: var(--line-color); }
-        .desktop-connector-v { position: absolute; left: -80px; top: 0; bottom: 0; width: 2px; background: var(--line-color); }
-        
-        /* Card Desktop */
-        .card {
-            width: 450px; height: 600px;
-            background: var(--card-bg);
-            border: 1px solid #2a2a30; border-radius: 12px;
-            flex-shrink: 0; display: flex; flex-direction: column;
-            position: relative; z-index: 10;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
-            transition: border-color 0.2s;
+        /* Tree Structure - Desktop Horizontal */
+        .node-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 70px;
+            position: relative;
         }
-        .card:hover { border-color: #555; }
 
-        /* --- MOBILE LAYOUT (Media Query Override) --- */
+        .children-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 50px;
+            position: relative;
+        }
+
+        /* Desktop Connectors - CSS Only */
+        .children-stack::before {
+            content: '';
+            position: absolute;
+            left: -70px;
+            top: 0;
+            bottom: 0;
+            width: 70px;
+            height: 2px;
+            background: linear-gradient(90deg, #333 0%, #444 100%);
+            top: 50%;
+            transform: translateY(-1px);
+        }
+
+        .children-stack::after {
+            content: '';
+            position: absolute;
+            left: -70px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: linear-gradient(180deg, #444 0%, #333 50%, #444 100%);
+        }
+
+        /* Card Styling */
+        .card {
+            width: 440px;
+            max-height: 580px;
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+        .card:hover {
+            border-color: #3a3a45;
+            transform: translateY(-2px);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 18px 22px;
+            border-bottom: 1px solid var(--border);
+            background: rgba(255,255,255,0.02);
+            border-radius: 14px 14px 0 0;
+            gap: 12px;
+        }
+
+        .card-title {
+            font-family: 'Space Grotesk', sans-serif;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: white;
+            flex: 1;
+            line-height: 1.3;
+        }
+
+        .card-close {
+            cursor: pointer;
+            padding: 6px;
+            border-radius: 6px;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .card-close:hover {
+            background: rgba(239, 68, 68, 0.15);
+            color: #ef4444;
+        }
+
+        .card-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 22px;
+            font-size: 0.95rem;
+            line-height: 1.65;
+        }
+
+        .card-body::-webkit-scrollbar { width: 5px; }
+        .card-body::-webkit-scrollbar-track { background: transparent; }
+        .card-body::-webkit-scrollbar-thumb {
+            background: #333;
+            border-radius: 3px;
+        }
+
+        /* Wiki Content */
+        .wiki-text p { margin-bottom: 1.2rem; color: #a8b3c1; }
+        .wiki-text a {
+            color: var(--accent);
+            text-decoration: none;
+            border-bottom: 1px dashed rgba(59,130,246,0.3);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        .wiki-text a:hover {
+            background: rgba(59, 130, 246, 0.12);
+            border-bottom-color: var(--accent);
+            padding: 0 3px;
+            border-radius: 3px;
+        }
+        .wiki-text h2, .wiki-text h3 {
+            font-family: 'Space Grotesk';
+            color: white;
+            font-weight: 600;
+            margin: 1.5rem 0 0.75rem;
+        }
+        .wiki-text h2 { font-size: 1.25rem; }
+        .wiki-text h3 { font-size: 1.05rem; }
+        .wiki-text img {
+            max-width: 100%;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+        .wiki-text table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+            font-size: 0.85rem;
+        }
+        .wiki-text td, .wiki-text th {
+            padding: 6px;
+            border: 1px solid #2a2a30;
+        }
+        
+        /* Hide wiki clutter */
+        .infobox, .sidebar, .navbox, .hatnote,
+        .metadata, .ambox { display: none !important; }
+
+        /* Search UI */
+        .search-container {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            width: 460px;
+        }
+
+        .search-box {
+            background: rgba(15,15,20,0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+            transition: all 0.2s;
+        }
+        .search-box:focus-within {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+        }
+
+        .search-input {
+            background: transparent;
+            border: none;
+            outline: none;
+            color: white;
+            width: 100%;
+            font-size: 0.95rem;
+        }
+        .search-input::placeholder { color: #555; }
+
+        .suggestions {
+            margin-top: 8px;
+            background: rgba(15,15,20,0.98);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+        .suggestions.active { display: block; }
+
+        .suggestion-item {
+            padding: 14px 20px;
+            cursor: pointer;
+            color: #cbd5e1;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .suggestion-item:hover {
+            background: rgba(59, 130, 246, 0.1);
+            color: white;
+        }
+        .suggestion-item:last-child { border-bottom: none; }
+
+        .suggestion-desc {
+            color: #666;
+            font-size: 0.8rem;
+            max-width: 180px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        /* Controls */
+        .controls {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            gap: 8px;
+            z-index: 90;
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            background: rgba(15,15,20,0.95);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            color: #888;
+        }
+        .control-btn:hover {
+            background: rgba(59, 130, 246, 0.15);
+            border-color: var(--accent);
+            color: white;
+        }
+
+        .hint {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            background: rgba(59, 130, 246, 0.08);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-size: 0.85rem;
+            color: #60a5fa;
+            z-index: 90;
+        }
+
+        /* Loading */
+        .spinner {
+            border: 2px solid #333;
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            width: 18px;
+            height: 18px;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- MOBILE LAYOUT --- */
         @media (max-width: 768px) {
-            body { 
-                overflow-y: auto; /* Enable Native Scroll */
+            body {
+                overflow-y: auto;
                 overflow-x: hidden;
                 height: auto;
-                background: #000;
             }
 
             #viewport {
                 position: static;
-                width: 100%; height: auto;
-                overflow: visible; cursor: default;
-                padding-bottom: 100px;
+                width: 100%;
+                height: auto;
+                overflow: visible;
+                cursor: default;
             }
 
             #world {
-                position: static !important; /* Disable absolute positioning */
-                transform: none !important; /* Disable Zoom/Pan */
-                display: flex;
-                flex-direction: column; /* Vertical Stack */
-                padding: 20px 10px; /* Small padding */
+                position: static !important;
+                transform: none !important;
+                display: block;
+                padding: 80px 12px 60px;
                 width: 100%;
             }
 
-            /* Change Tree Direction to Vertical */
+            /* Vertical Stack */
             .node-wrapper {
-                flex-direction: column; /* Children go below parent */
-                align-items: stretch; /* Full width */
-                gap: 15px;
-                width: 100%;
-                margin-bottom: 15px;
-                position: relative;
+                flex-direction: column;
+                align-items: stretch;
+                gap: 16px;
+                margin-bottom: 16px;
             }
 
             .children-stack {
-                flex-direction: column;
-                gap: 15px;
-                padding-left: 15px; /* Indentation for children */
-                border-left: 2px solid #333; /* Visual Thread Line */
-                margin-left: 10px;
+                gap: 16px;
+                padding-left: 20px;
+                border-left: 2px solid #333;
+                margin-left: 8px;
             }
 
-            /* Hide Desktop Connectors */
-            .desktop-connector-h, .desktop-connector-v { display: none; }
+            /* Hide desktop connectors */
+            .children-stack::before,
+            .children-stack::after {
+                display: none;
+            }
 
-            /* Mobile Card Styling */
+            /* Mobile Cards */
             .card {
-                width: 100% !important; /* Full Width */
-                height: auto;
-                max-height: 60vh; /* Collapsed view? No, let's auto height */
-                min-height: 200px;
-                box-shadow: none;
-                border: 1px solid #222;
+                width: 100% !important;
+                max-height: none;
+                min-height: auto;
             }
-            
-            .card-header { padding: 12px 16px; background: #1a1a1f; }
+
+            .card-header { padding: 14px 16px; }
             .card-title { font-size: 1rem; }
+            .card-body { padding: 16px; font-size: 0.9rem; }
+
+            /* Mobile Search */
+            .search-container {
+                width: calc(100% - 24px);
+                top: 12px;
+            }
+
+            .search-box { padding: 10px 16px; }
+
+            /* Hide desktop controls */
+            .controls { display: none; }
             
-            /* Mobile Search Bar */
-            .search-bar { width: 90% !important; top: 10px; }
-            .nav-hint { display: none; } /* Hide hints on mobile */
+            .hint {
+                bottom: 12px;
+                left: 12px;
+                font-size: 0.75rem;
+                padding: 8px 14px;
+            }
         }
-
-        /* --- Shared UI --- */
-        .card-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 16px 24px; border-bottom: 1px solid #2a2a30;
-            background: #18181c; border-radius: 12px 12px 0 0;
-        }
-        
-        .card-body {
-            flex: 1; overflow-y: auto; padding: 20px;
-            font-size: 1rem; line-height: 1.6; color: #ccc;
-            scrollbar-width: thin;
-        }
-
-        /* Typography */
-        .wiki-text h2 { font-family: 'Space Grotesk'; font-size: 1.3rem; color: #fff; margin: 1.5rem 0 0.5rem 0; }
-        .wiki-text a { color: var(--accent); text-decoration: none; border-bottom: 1px solid rgba(59,130,246,0.3); }
-        .wiki-text p { margin-bottom: 1rem; }
-
-        /* UI Layer */
-        .search-bar {
-            position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-            z-index: 100; background: rgba(20,20,25,0.95); backdrop-filter: blur(10px);
-            border: 1px solid #333; border-radius: 30px;
-            padding: 8px 20px; display: flex; align-items: center; gap: 10px;
-            width: 400px; transition: all 0.3s;
-        }
-        
-        .spinner { border: 2px solid #333; border-top: 2px solid #3b82f6; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
-        .suggestions {
-            position: fixed; top: 70px; left: 50%; transform: translateX(-50%);
-            width: 90%; max-width: 400px; background: #1a1a20; border: 1px solid #333;
-            border-radius: 12px; display: none; z-index: 99;
-        }
-        .suggestions.active { display: block; }
-        .s-item { padding: 12px; border-bottom: 1px solid #222; color: #ccc; cursor: pointer; }
-        
-        /* Nav Hint */
-        .nav-hint {
-            position: fixed; bottom: 30px; left: 30px; 
-            background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 20px;
-            font-size: 0.8rem; color: #888; pointer-events: none; border: 1px solid #333;
-        }
-
     </style>
 </head>
 <body>
 
-    <div class="search-bar">
-        <i class="ri-search-line text-gray-500"></i>
-        <input type="text" id="searchInput" placeholder="Search knowledge..." class="bg-transparent border-none outline-none text-white w-full h-8 text-sm">
-        <div id="loader" class="spinner hidden"></div>
-    </div>
-    <div id="suggestions" class="suggestions"></div>
-
-    <div class="nav-hint">
-        Desktop Mode: Drag to Pan • Scroll to Zoom
+    <div class="search-container">
+        <div class="search-box">
+            <i class="ri-search-2-line text-gray-500"></i>
+            <input type="text" id="searchInput" class="search-input" 
+                   placeholder="Search Wikipedia..." autocomplete="off">
+            <div id="loader" class="spinner hidden"></div>
+        </div>
+        <div id="suggestions" class="suggestions"></div>
     </div>
 
     <div id="viewport">
         <div id="world"></div>
     </div>
 
+    <div class="controls">
+        <button class="control-btn" onclick="zoomIn()">
+            <i class="ri-zoom-in-line"></i>
+        </button>
+        <button class="control-btn" onclick="zoomOut()">
+            <i class="ri-zoom-out-line"></i>
+        </button>
+        <button class="control-btn" onclick="resetView()">
+            <i class="ri-focus-2-line"></i>
+        </button>
+    </div>
+
+    <div class="hint">
+        <span class="desktop-hint">Drag to pan · Scroll to zoom · Click links</span>
+        <span class="mobile-hint hidden">Tap links to expand</span>
+    </div>
+
     <script>
-        // --- Core State ---
         const state = {
-            isMobile: false,
+            isMobile: window.innerWidth <= 768,
             scale: 1,
-            x: 0, y: 0,
+            x: 0,
+            y: 0,
             isDragging: false,
-            startX: 0, startY: 0
+            startX: 0,
+            startY: 0,
+            touchStartDist: 0
         };
 
         const dom = {
             viewport: document.getElementById('viewport'),
             world: document.getElementById('world'),
             input: document.getElementById('searchInput'),
-            suggestions: document.getElementById('suggestions')
+            suggestions: document.getElementById('suggestions'),
+            loader: document.getElementById('loader')
         };
 
         const API = 'https://en.wikipedia.org/w/api.php?origin=*';
 
-        // --- Device Detection & Layout Switching ---
+        // Device Detection
         function checkDevice() {
             const wasMobile = state.isMobile;
             state.isMobile = window.innerWidth <= 768;
 
             if (state.isMobile !== wasMobile) {
-                console.log(`Switched to ${state.isMobile ? 'Mobile' : 'Desktop'} Mode`);
-                
                 if (state.isMobile) {
-                    // Reset Transform for Mobile
                     dom.world.style.transform = '';
-                    dom.viewport.style.cursor = 'default';
+                    document.querySelector('.desktop-hint').classList.add('hidden');
+                    document.querySelector('.mobile-hint').classList.remove('hidden');
                 } else {
-                    // Restore Desktop Defaults
-                    state.x = (window.innerWidth / 2) - 225;
-                    state.y = (window.innerHeight / 2) - 300;
-                    state.scale = 1;
-                    updateTransform();
-                    dom.viewport.style.cursor = 'grab';
+                    resetView();
+                    document.querySelector('.desktop-hint').classList.remove('hidden');
+                    document.querySelector('.mobile-hint').classList.add('hidden');
                 }
             }
         }
 
         window.addEventListener('resize', checkDevice);
-        checkDevice(); // Run on load
+        checkDevice();
 
-        // --- Desktop Navigation Engine ---
+        // Transform Management
         function updateTransform() {
-            if (state.isMobile) return; // Disable JS transforms on mobile
+            if (state.isMobile) return;
             dom.world.style.transform = `translate(${state.x}px, ${state.y}px) scale(${state.scale})`;
         }
 
-        dom.viewport.addEventListener('wheel', (e) => {
-            if (state.isMobile) return; // Native scroll on mobile
-
-            const isOverCard = e.target.closest('.card-body');
-            
-            // Zoom (Ctrl + Wheel)
-            if (e.ctrlKey) {
-                e.preventDefault();
-                const delta = e.deltaY * -0.001;
-                state.scale = Math.min(Math.max(0.2, state.scale + delta), 4);
-                updateTransform();
-                return;
-            }
-
-            // Text Scroll
-            if (isOverCard) return;
-
-            // Pan
-            e.preventDefault();
-            state.x -= e.deltaX;
-            state.y -= e.deltaY;
-            updateTransform();
-        }, { passive: false });
-
+        // Desktop Mouse Controls
         dom.viewport.addEventListener('mousedown', (e) => {
             if (state.isMobile) return;
-            if (e.target.closest('.card-body') || e.target.closest('.search-bar')) return;
+            if (e.target.closest('.card-body') || 
+                e.target.closest('.search-container') ||
+                e.target.closest('.controls')) return;
+
             state.isDragging = true;
             state.startX = e.clientX - state.x;
             state.startY = e.clientY - state.y;
-            dom.viewport.style.cursor = 'grabbing';
+            dom.viewport.classList.add('panning');
         });
 
         window.addEventListener('mouseup', () => {
             state.isDragging = false;
-            if(!state.isMobile) dom.viewport.style.cursor = 'grab';
+            dom.viewport.classList.remove('panning');
         });
 
         window.addEventListener('mousemove', (e) => {
@@ -291,146 +518,292 @@
             updateTransform();
         });
 
-        // --- Wikipedia Logic ---
+        // Desktop Wheel Zoom
+        dom.viewport.addEventListener('wheel', (e) => {
+            if (state.isMobile) return;
+            
+            // Allow scrolling inside cards
+            if (e.target.closest('.card-body')) return;
+            
+            e.preventDefault();
+            
+            const delta = e.deltaY * -0.001;
+            const newScale = Math.min(Math.max(0.3, state.scale + delta), 2.5);
+            
+            // Zoom towards cursor
+            const rect = dom.viewport.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+            
+            const worldX = (mouseX - state.x) / state.scale;
+            const worldY = (mouseY - state.y) / state.scale;
+            
+            state.scale = newScale;
+            state.x = mouseX - worldX * state.scale;
+            state.y = mouseY - worldY * state.scale;
+            
+            updateTransform();
+        }, { passive: false });
+
+        // Mobile Touch Controls
+        let touchStartX = 0, touchStartY = 0;
+        
+        dom.viewport.addEventListener('touchstart', (e) => {
+            if (!state.isMobile) return;
+            
+            if (e.touches.length === 2) {
+                // Pinch zoom
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                state.touchStartDist = Math.sqrt(dx * dx + dy * dy);
+            } else if (e.touches.length === 1) {
+                touchStartX = e.touches[0].clientX - state.x;
+                touchStartY = e.touches[0].clientY - state.y;
+            }
+        });
+
+        dom.viewport.addEventListener('touchmove', (e) => {
+            if (!state.isMobile) return;
+            
+            if (e.touches.length === 2 && state.touchStartDist > 0) {
+                e.preventDefault();
+                const dx = e.touches[0].clientX - e.touches[1].clientX;
+                const dy = e.touches[0].clientY - e.touches[1].clientY;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                
+                const scaleDelta = (dist - state.touchStartDist) * 0.01;
+                state.scale = Math.min(Math.max(0.5, state.scale + scaleDelta), 3);
+                state.touchStartDist = dist;
+                updateTransform();
+            }
+        }, { passive: false });
+
+        // Wikipedia API
+        async function fetchSuggestions(query) {
+            if (query.length < 2) return [];
+            try {
+                const res = await fetch(`${API}&action=opensearch&search=${encodeURIComponent(query)}&limit=6&format=json`);
+                const data = await res.json();
+                return data[1].map((title, i) => ({
+                    title,
+                    desc: data[2][i]
+                }));
+            } catch(e) {
+                return [];
+            }
+        }
 
         async function fetchPage(title) {
             try {
-                const res = await fetch(`${API}&action=parse&page=${encodeURIComponent(title)}&format=json&prop=text|displaytitle&redirects=1&disableeditsection=1&mobileformat=1`);
+                const res = await fetch(`${API}&action=parse&page=${encodeURIComponent(title)}&format=json&prop=text|displaytitle&redirects=1&disableeditsection=1`);
                 const data = await res.json();
-                return data.parse ? { title: data.parse.displaytitle, html: data.parse.text['*'] } : null;
-            } catch (e) { return null; }
+                if (data.error) throw new Error(data.error.info);
+                return {
+                    title: data.parse.displaytitle,
+                    html: data.parse.text['*']
+                };
+            } catch(e) {
+                return null;
+            }
         }
 
+        // Node Creation
         function createNode(title, parentStack = null) {
             const wrapper = document.createElement('div');
             wrapper.className = 'node-wrapper';
 
             const card = document.createElement('div');
             card.className = 'card';
-            
+
             card.innerHTML = `
                 <div class="card-header">
-                    <span class="font-bold text-white truncate pr-4 text-lg font-['Space_Grotesk']">${title}</span>
-                    <i class="ri-close-line cursor-pointer hover:text-red-500 text-xl" onclick="removeNode(this)"></i>
+                    <div class="card-title">${title}</div>
+                    <div class="card-close" onclick="removeNode(this)">
+                        <i class="ri-close-line text-lg"></i>
+                    </div>
                 </div>
-                <div class="card-body wiki-text">
-                    <div class="flex flex-col items-center justify-center h-40 text-gray-500 gap-3">
+                <div class="card-body">
+                    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 200px; gap: 12px; color: #555;">
                         <div class="spinner"></div>
-                        <span class="text-xs">Loading...</span>
+                        <span style="font-size: 0.85rem;">Loading...</span>
                     </div>
                 </div>
             `;
-
-            // Connectors (Desktop Only Visuals)
-            if (parentStack) {
-                const hLine = document.createElement('div'); hLine.className = 'desktop-connector-h';
-                const vLine = document.createElement('div'); vLine.className = 'desktop-connector-v';
-                wrapper.appendChild(hLine);
-                // Note: vLine Logic is CSS based on .children-stack, simpler
-            }
 
             wrapper.appendChild(card);
 
             if (!parentStack) {
                 dom.world.innerHTML = '';
                 dom.world.appendChild(wrapper);
-                if(!state.isMobile) {
-                    state.x = (window.innerWidth / 2) - 225;
-                    state.y = (window.innerHeight / 2) - 300;
-                    updateTransform();
+                if (!state.isMobile) {
+                    setTimeout(() => resetView(), 100);
                 }
             } else {
                 parentStack.appendChild(wrapper);
-                // Mobile Auto-Scroll to new card
-                if(state.isMobile) {
+                if (state.isMobile) {
                     setTimeout(() => {
-                        card.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                    }, 100);
+                        card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    }, 200);
                 }
             }
 
-            // Animate
-            gsap.from(card, { opacity: 0, y: 20, duration: 0.4 });
+            gsap.from(card, {
+                opacity: 0,
+                y: 20,
+                scale: 0.95,
+                duration: 0.4,
+                ease: "power2.out"
+            });
 
-            // Fetch
             fetchPage(title).then(data => {
-                if(!data) {
-                    card.querySelector('.card-body').innerHTML = '<div class="p-4 text-red-400">Page not found.</div>';
+                if (!data) {
+                    card.querySelector('.card-body').innerHTML = 
+                        '<div style="padding: 20px; color: #ef4444;">Page not found</div>';
                     return;
                 }
-                
-                const cleanHTML = DOMPurify.sanitize(data.html, { FORBID_TAGS: ['style','script','link','iframe'] });
+
+                const cleanHTML = DOMPurify.sanitize(data.html, {
+                    FORBID_TAGS: ['style', 'script', 'iframe'],
+                    FORBID_ATTR: ['onclick']
+                });
+
+                card.querySelector('.card-header .card-title').innerHTML = data.title;
                 const body = card.querySelector('.card-body');
                 body.innerHTML = cleanHTML;
+                body.className = 'card-body wiki-text';
 
                 body.querySelectorAll('a').forEach(link => {
                     const href = link.getAttribute('href');
-                    if(href && href.startsWith('/wiki/')) {
+                    if (href && href.startsWith('/wiki/')) {
+                        const targetTitle = href.replace('/wiki/', '').split('#')[0];
+                        
+                        if (targetTitle.includes(':')) {
+                            link.style.opacity = '0.5';
+                            link.style.cursor = 'not-allowed';
+                            return;
+                        }
+
                         link.onclick = (e) => {
                             e.preventDefault();
-                            const nextTitle = href.replace('/wiki/', '').split('#')[0];
-                            spawnChild(wrapper, nextTitle);
-                        }
-                    } else {
-                        link.target = "_blank";
+                            spawnChild(wrapper, targetTitle);
+                        };
+                    } else if (href && href.startsWith('http')) {
+                        link.target = '_blank';
+                        link.style.opacity = '0.6';
                     }
                 });
             });
         }
 
-        function spawnChild(parentNodeWrapper, title) {
-            let stack = parentNodeWrapper.querySelector('.children-stack');
+        function spawnChild(parentWrapper, title) {
+            let stack = parentWrapper.querySelector('.children-stack');
             if (!stack) {
                 stack = document.createElement('div');
                 stack.className = 'children-stack';
-                parentNodeWrapper.appendChild(stack);
+                parentWrapper.appendChild(stack);
             }
             createNode(title, stack);
         }
 
-        function removeNode(icon) {
-            const wrapper = icon.closest('.node-wrapper');
-            gsap.to(wrapper, { opacity: 0, height: 0, duration: 0.3, onComplete: () => wrapper.remove() });
+        function removeNode(btn) {
+            const wrapper = btn.closest('.node-wrapper');
+            gsap.to(wrapper, {
+                opacity: 0,
+                scale: 0.9,
+                duration: 0.3,
+                onComplete: () => wrapper.remove()
+            });
         }
 
-        // --- Search ---
-        let debounce;
+        // Search
+        let debounceTimer;
+
         dom.input.addEventListener('input', (e) => {
-            clearTimeout(debounce);
-            const q = e.target.value;
-            if(q.length < 2) { dom.suggestions.classList.remove('active'); return; }
-            
-            document.getElementById('loader').classList.remove('hidden');
-            debounce = setTimeout(async () => {
-                const res = await fetch(`${API}&action=opensearch&search=${encodeURIComponent(q)}&limit=5&format=json`);
-                const data = await res.json();
-                document.getElementById('loader').classList.add('hidden');
-                
-                dom.suggestions.innerHTML = '';
-                if(data[1].length) {
-                    dom.suggestions.classList.add('active');
-                    data[1].forEach(t => {
-                        const div = document.createElement('div');
-                        div.className = 's-item';
-                        div.innerText = t;
-                        div.onclick = () => {
-                            createNode(t);
-                            dom.suggestions.classList.remove('active');
-                            dom.input.value = '';
-                        }
-                        dom.suggestions.appendChild(div);
-                    });
-                }
+            clearTimeout(debounceTimer);
+            const query = e.target.value;
+
+            if (query.length < 2) {
+                dom.suggestions.classList.remove('active');
+                return;
+            }
+
+            dom.loader.classList.remove('hidden');
+
+            debounceTimer = setTimeout(async () => {
+                const results = await fetchSuggestions(query);
+                dom.loader.classList.add('hidden');
+                renderSuggestions(results);
             }, 300);
         });
 
-        window.addEventListener('click', (e) => {
-            if(!e.target.closest('.search-bar')) dom.suggestions.classList.remove('active');
+        function renderSuggestions(items) {
+            dom.suggestions.innerHTML = '';
+
+            if (items.length === 0) {
+                dom.suggestions.classList.remove('active');
+                return;
+            }
+
+            items.forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = `
+                    <span>${item.title}</span>
+                    <span class="suggestion-desc">${item.desc || ''}</span>
+                `;
+                div.onclick = () => {
+                    createNode(item.title);
+                    dom.suggestions.classList.remove('active');
+                    dom.input.value = '';
+                };
+                dom.suggestions.appendChild(div);
+            });
+
+            dom.suggestions.classList.add('active');
+        }
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.search-container')) {
+                dom.suggestions.classList.remove('active');
+            }
         });
 
-        // Init
+        // Controls
+        function zoomIn() {
+            state.scale = Math.min(2.5, state.scale + 0.2);
+            updateTransform();
+        }
+
+        function zoomOut() {
+            state.scale = Math.max(0.3, state.scale - 0.2);
+            updateTransform();
+        }
+
+        function resetView() {
+            if (state.isMobile) return;
+            state.x = (window.innerWidth / 2) - 220;
+            state.y = (window.innerHeight / 2) - 290;
+            state.scale = 1;
+            gsap.to(state, {
+                duration: 0.6,
+                ease: "power2.inOut",
+                onUpdate: updateTransform
+            });
+        }
+
+        // Initialize
         createNode("Internet");
 
+        // Hide hint after 6s
+        setTimeout(() => {
+            const hint = document.querySelector('.hint');
+            gsap.to(hint, {
+                opacity: 0,
+                y: 10,
+                duration: 0.4,
+                onComplete: () => hint.remove()
+            });
+        }, 6000);
     </script>
 </body>
 </html>
