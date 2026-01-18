@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Media Tracker</title>
+    <style>
+        :root {
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --text: #e0e0e0;
+            --accent: #00adb5;
+            --border: #333;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .container { width: 100%; max-width: 800px; }
+
+        header { margin-bottom: 2rem; text-align: center; }
+
+        /* Controls Section */
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+            justify-content: center;
+        }
+
+        input, select {
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card-bg);
+            color: white;
+            font-size: 1rem;
+        }
+
+        input { flex-grow: 1; }
+
+        /* Grid Layout */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            padding: 15px;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+            position: relative;
+        }
+
+        .card:hover {
+            transform: translateY(-3px);
+            border-color: var(--accent);
+        }
+
+        .card h3 { margin: 0 0 5px 0; color: var(--accent); }
+        .card .meta { font-size: 0.85rem; opacity: 0.7; margin-bottom: 8px; }
+        .card .notes { font-size: 0.9rem; font-style: italic; margin-top: 10px; }
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            font-weight: bold;
+            background: #444;
+            margin-right: 5px;
+        }
+
+        /* Responsive Mobile adjustments */
+        @media (max-width: 600px) {
+            .grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <h1>Media Tracker</h1>
+    </header>
+
+    <section class="controls">
+        <input type="text" id="searchInput" placeholder="Search titles...">
+        <select id="filterType">
+            <option value="All">All Types</option>
+            <option value="Movie">Movies</option>
+            <option value="Anime">Anime</option>
+            <option value="TV Show">TV Shows</option>
+        </select>
+        <select id="filterStatus">
+            <option value="All">All Status</option>
+            <option value="Watched">Watched</option>
+            <option value="Watchlist">Watchlist</option>
+        </select>
+    </section>
+
+    <div id="mediaGrid" class="grid">
+        </div>
+</div>
+
+<script>
+    let mediaData = [];
+
+    // Load data
+    async function loadData() {
+        try {
+            const response = await fetch('data.json');
+            mediaData = await response.json();
+            renderCards(mediaData);
+        } catch (e) {
+            console.error("Error loading JSON:", e);
+        }
+    }
+
+    function renderCards(data) {
+        const grid = document.getElementById('mediaGrid');
+        grid.innerHTML = '';
+
+        // Sort by name automatically
+        data.sort((a, b) => a.title.localeCompare(b.title));
+
+        data.forEach(item => {
+            const card = document.createElement('div');
+            card.className = 'card';
+            
+            // Dynamic Google Search Link Logic
+            card.onclick = () => {
+                const query = encodeURIComponent(`${item.title} ${item.type}`);
+                window.open(`https://www.google.com/search?q=${query}`, '_blank');
+            };
+
+            card.innerHTML = `
+                <div class="meta">
+                    <span class="badge">${item.type}</span>
+                    <span class="badge" style="background: ${item.status === 'Watched' ? '#2e7d32' : '#1565c0'}">${item.status}</span>
+                </div>
+                <h3>${item.title}</h3>
+                ${item.rating ? `<div>⭐ ${item.rating}</div>` : ''}
+                ${item.notes ? `<div class="notes">"${item.notes}"</div>` : ''}
+            `;
+            grid.appendChild(card);
+        });
+    }
+
+    // Filtering logic
+    function filterData() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const typeTerm = document.getElementById('filterType').value;
+        const statusTerm = document.getElementById('filterStatus').value;
+
+        const filtered = mediaData.filter(item => {
+            const matchesSearch = item.title.toLowerCase().includes(searchTerm);
+            const matchesType = typeTerm === 'All' || item.type === typeTerm;
+            const matchesStatus = statusTerm === 'All' || item.status === statusTerm;
+            return matchesSearch && matchesType && matchesStatus;
+        });
+
+        renderCards(filtered);
+    }
+
+    // Event Listeners
+    document.getElementById('searchInput').addEventListener('input', filterData);
+    document.getElementById('filterType').addEventListener('change', filterData);
+    document.getElementById('filterStatus').addEventListener('change', filterData);
+
+    window.onload = loadData;
+</script>
+
+</body>
+</html>
